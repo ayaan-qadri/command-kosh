@@ -128,8 +128,8 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                     </label>
                 </div>
                 <div className="pt-2">
-                    <button type="submit" className="bg-teal-500 hover:bg-teal-400 text-zinc-950 font-medium px-6 py-2 rounded-md transition-colors w-full">
-                        Save and Schedule
+                    <button type="submit" className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-6 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] w-full flex justify-center items-center gap-2">
+                        <span className="font-mono">{'>_'}</span> <span>Save and Schedule</span>
                     </button>
                 </div>
             </form>

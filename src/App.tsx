@@ -91,9 +91,9 @@ function App() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-teal-500 hover:bg-teal-400 text-zinc-950 font-medium px-4 py-2 rounded-md transition-colors shadow-lg shadow-teal-500/20 text-sm flex items-center gap-2"
+          className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] text-sm flex items-center gap-2"
         >
-          <span>{showForm ? "Cancel" : "+"}</span> {showForm ? "Close Form" : "New Command"}
+          <span className="font-mono text-base leading-none">{showForm ? "✕" : "+"}</span> <span>{showForm ? "Cancel" : "New Command"}</span>
         </button>
       </header>
 
