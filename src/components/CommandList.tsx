@@ -33,7 +33,7 @@ export function CommandList({ commands, showForm, onSelect, onDelete }: CommandL
                             {cmd.command_str}
                         </code>
                         <p className="text-xs text-zinc-500">
-                            Schedule: {cmd.interval_secs > 0 ? `Every ${cmd.interval_secs} seconds` : "Manual / One-time"}
+                            Schedule: {cmd.run_at_secs ? `Scheduled for ${new Date(cmd.run_at_secs * 1000).toLocaleString()}` : cmd.interval_secs > 0 ? `Every ${cmd.interval_secs} seconds` : "Manual / One-time"}
                         </p>
                     </div>
                     <button

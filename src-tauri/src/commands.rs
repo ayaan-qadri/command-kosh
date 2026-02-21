@@ -9,6 +9,7 @@ pub async fn register_command(
     name: String,
     command_str: String,
     interval_secs: u64,
+    run_at_secs: Option<u64>,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
@@ -18,6 +19,7 @@ pub async fn register_command(
         name,
         command_str: command_str.clone(),
         interval_secs,
+        run_at_secs,
     };
 
     {
@@ -122,6 +124,7 @@ pub async fn edit_command(
     name: String,
     command_str: String,
     interval_secs: u64,
+    run_at_secs: Option<u64>,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -131,6 +134,7 @@ pub async fn edit_command(
             cmd.name = name;
             cmd.command_str = command_str;
             cmd.interval_secs = interval_secs;
+            cmd.run_at_secs = run_at_secs;
         }
         save_commands(&app_handle, &cmds);
     }

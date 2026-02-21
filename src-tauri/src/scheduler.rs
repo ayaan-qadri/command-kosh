@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncBufReadExt;
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
@@ -24,6 +25,7 @@ pub fn spawn_command_task(
                 s.is_active = true;
             }
         }
+        let mut first_run = true;
         loop {
             let cmd_to_run = {
                 let cmds = commands_ref.lock().await;
@@ -31,6 +33,18 @@ pub fn spawn_command_task(
             };
 
             if let Some(cmd) = cmd_to_run {
+                if first_run {
+                    first_run = false;
+                    if let Some(target) = cmd.run_at_secs {
+                        if let Ok(sys_time) = SystemTime::now().duration_since(UNIX_EPOCH) {
+                            let now = sys_time.as_secs();
+                            if target > now {
+                                sleep(Duration::from_secs(target - now)).await;
+                            }
+                        }
+                    }
+                }
+
                 println!("Running command: {}", cmd.name);
 
                 {

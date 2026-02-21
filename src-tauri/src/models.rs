@@ -9,6 +9,8 @@ pub struct RegisteredCommand {
     pub name: String,
     pub command_str: String,
     pub interval_secs: u64,
+    #[serde(default)]
+    pub run_at_secs: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

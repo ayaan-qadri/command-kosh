@@ -27,7 +27,9 @@ export function CommandDetails({
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState("");
     const [editCommandStr, setEditCommandStr] = useState("");
+    const [editScheduleType, setEditScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
     const [editIntervalSecs, setEditIntervalSecs] = useState("");
+    const [editDatetime, setEditDatetime] = useState("");
 
     useEffect(() => {
         let isMounted = true;
@@ -115,18 +117,43 @@ export function CommandDetails({
         setIsEditing(true);
         setEditName(selectedCommand.name);
         setEditCommandStr(selectedCommand.command_str);
-        setEditIntervalSecs(selectedCommand.interval_secs.toString());
+
+        if (selectedCommand.run_at_secs) {
+            setEditScheduleType("datetime");
+            const dt = new Date(selectedCommand.run_at_secs * 1000);
+            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+            setEditDatetime(dt.toISOString().slice(0, 16));
+            setEditIntervalSecs("60");
+        } else if (selectedCommand.interval_secs > 0) {
+            setEditScheduleType("interval");
+            setEditIntervalSecs(selectedCommand.interval_secs.toString());
+            setEditDatetime("");
+        } else {
+            setEditScheduleType("manual");
+            setEditIntervalSecs("60");
+            setEditDatetime("");
+        }
     };
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const interval = parseInt(editIntervalSecs) || 0;
+            let interval = 0;
+            let runAt: number | null = null;
+            if (editScheduleType === "interval") {
+                interval = parseInt(editIntervalSecs) || 0;
+            } else if (editScheduleType === "datetime") {
+                if (editDatetime) {
+                    runAt = Math.floor(new Date(editDatetime).getTime() / 1000);
+                }
+            }
+
             await invoke("edit_command", {
                 id: selectedCommand.id,
                 name: editName,
                 commandStr: editCommandStr,
                 intervalSecs: interval,
+                runAtSecs: runAt,
             });
             fetchCommands();
             onCommandUpdated({
@@ -134,6 +161,7 @@ export function CommandDetails({
                 name: editName,
                 command_str: editCommandStr,
                 interval_secs: interval,
+                run_at_secs: runAt,
             });
             setIsEditing(false);
         } catch (e) {
@@ -163,10 +191,10 @@ export function CommandDetails({
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                     <div
                         className={`px-2 py-1 rounded text-xs font-bold ${detailsState.is_running
-                                ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
-                                : detailsState.is_active
-                                    ? "bg-blue-500/20 text-blue-400 font-bold"
-                                    : "bg-zinc-800 text-zinc-400"
+                            ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                            : detailsState.is_active
+                                ? "bg-blue-500/20 text-blue-400 font-bold"
+                                : "bg-zinc-800 text-zinc-400"
                             }`}
                     >
                         {detailsState.is_running
@@ -186,8 +214,8 @@ export function CommandDetails({
                         onClick={handleStart}
                         disabled={detailsState.is_active}
                         className={`px-3 py-1.5 rounded-md text-sm transition font-medium ${detailsState.is_active
-                                ? "bg-emerald-500/5 text-emerald-400/30 border border-emerald-500/20 cursor-not-allowed"
-                                : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 cursor-pointer"
+                            ? "bg-emerald-500/5 text-emerald-400/30 border border-emerald-500/20 cursor-not-allowed"
+                            : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 cursor-pointer"
                             }`}
                     >
                         Start
@@ -196,8 +224,8 @@ export function CommandDetails({
                         onClick={handleStop}
                         disabled={!detailsState.is_active}
                         className={`px-3 py-1.5 rounded-md text-sm transition font-medium ${!detailsState.is_active
-                                ? "bg-red-500/5 text-red-400/30 border border-red-500/20 cursor-not-allowed"
-                                : "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 cursor-pointer"
+                            ? "bg-red-500/5 text-red-400/30 border border-red-500/20 cursor-not-allowed"
+                            : "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 cursor-pointer"
                             }`}
                     >
                         Stop
@@ -234,17 +262,47 @@ export function CommandDetails({
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-zinc-400 mb-1">
-                                    Interval in Seconds (0 to run only once)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    required
-                                    value={editIntervalSecs}
-                                    onChange={(e) => setEditIntervalSecs(e.target.value)}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
-                                />
+                                <div>
+                                    <div>
+                                        <label className="block text-sm text-zinc-400 mb-1">Schedule Type</label>
+                                        <select
+                                            value={editScheduleType}
+                                            onChange={(e) => setEditScheduleType(e.target.value as any)}
+                                            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 mb-4"
+                                        >
+                                            <option value="manual">Run Once Immediately</option>
+                                            <option value="interval">Recurring Interval</option>
+                                            <option value="datetime">Specific Date and Time</option>
+                                        </select>
+                                    </div>
+
+                                    {editScheduleType === "interval" && (
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Interval in Seconds</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                required
+                                                value={editIntervalSecs}
+                                                onChange={(e) => setEditIntervalSecs(e.target.value)}
+                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {editScheduleType === "datetime" && (
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Target Date and Time</label>
+                                            <input
+                                                type="datetime-local"
+                                                required
+                                                value={editDatetime}
+                                                onChange={(e) => setEditDatetime(e.target.value)}
+                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="pt-4 flex gap-3">
                                 <button
