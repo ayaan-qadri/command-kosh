@@ -8,6 +8,7 @@ interface CommandDetailsProps {
     onBack: () => void;
     onCommandUpdated: (cmd: RegisteredCommand) => void;
     fetchCommands: () => void;
+    onDelete: () => void;
 }
 
 export function CommandDetails({
@@ -15,6 +16,7 @@ export function CommandDetails({
     onBack,
     onCommandUpdated,
     fetchCommands,
+    onDelete,
 }: CommandDetailsProps) {
     const [detailsState, setDetailsState] = useState<CommandExecutionState>({
         is_running: false,
@@ -209,6 +211,12 @@ export function CommandDetails({
                         className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm transition font-medium"
                     >
                         Edit
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-3 py-1.5 rounded-md text-sm transition font-medium"
+                    >
+                        Delete
                     </button>
                     <button
                         onClick={handleStart}

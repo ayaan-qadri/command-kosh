@@ -2,18 +2,31 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect } from "react";
 import "./App.css";
 
-import { RegisteredCommand } from "./types";
+import { RegisteredCommand, CommandExecutionState } from "./types";
 import { CommandForm } from "./components/CommandForm";
 import { CommandList } from "./components/CommandList";
 import { CommandDetails } from "./components/CommandDetails";
 
 function App() {
   const [commands, setCommands] = useState<RegisteredCommand[]>([]);
+  const [commandStates, setCommandStates] = useState<Record<string, CommandExecutionState>>({});
   const [showForm, setShowForm] = useState(false);
   const [selectedCommand, setSelectedCommand] = useState<RegisteredCommand | null>(null);
 
+  const fetchStates = async () => {
+    try {
+      const states = await invoke<Record<string, CommandExecutionState>>("get_all_command_states");
+      setCommandStates(states);
+    } catch (e) {
+      console.error("Failed to fetch states:", e);
+    }
+  };
+
   useEffect(() => {
     fetchCommands();
+    fetchStates();
+    const interval = setInterval(fetchStates, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchCommands = async () => {
@@ -33,6 +46,7 @@ function App() {
         setSelectedCommand(null);
       }
       fetchCommands();
+      fetchStates();
     } catch (e) {
       console.error("Failed to delete command:", e);
     }
@@ -45,6 +59,7 @@ function App() {
         onBack={() => setSelectedCommand(null)}
         fetchCommands={fetchCommands}
         onCommandUpdated={(updated) => setSelectedCommand(updated)}
+        onDelete={() => handleDelete(selectedCommand.id)}
       />
     );
   }
@@ -79,9 +94,19 @@ function App() {
             <h2 className="text-lg font-medium text-zinc-200">Registered Commands</h2>
             <CommandList
               commands={commands}
+              states={commandStates}
               showForm={showForm}
               onSelect={setSelectedCommand}
-              onDelete={handleDelete}
+              onStart={async (id, e) => {
+                e.stopPropagation();
+                await invoke("start_command", { id });
+                fetchStates();
+              }}
+              onStop={async (id, e) => {
+                e.stopPropagation();
+                await invoke("stop_command", { id });
+                fetchStates();
+              }}
             />
           </div>
         </div>

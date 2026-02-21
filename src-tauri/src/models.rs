@@ -11,6 +11,8 @@ pub struct RegisteredCommand {
     pub interval_secs: u64,
     #[serde(default)]
     pub run_at_secs: Option<u64>,
+    #[serde(default)]
+    pub actively_stopped: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

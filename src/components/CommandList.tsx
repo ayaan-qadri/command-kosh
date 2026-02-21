@@ -1,13 +1,15 @@
-import { RegisteredCommand } from "../types";
+import { RegisteredCommand, CommandExecutionState } from "../types";
 
 interface CommandListProps {
     commands: RegisteredCommand[];
+    states: Record<string, CommandExecutionState>;
     showForm: boolean;
     onSelect: (cmd: RegisteredCommand) => void;
-    onDelete: (id: string, e?: React.MouseEvent) => void;
+    onStart: (id: string, e: React.MouseEvent) => void;
+    onStop: (id: string, e: React.MouseEvent) => void;
 }
 
-export function CommandList({ commands, showForm, onSelect, onDelete }: CommandListProps) {
+export function CommandList({ commands, states, showForm, onSelect, onStart, onStop }: CommandListProps) {
     if (commands.length === 0 && !showForm) {
         return (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center flex flex-col items-center">
@@ -36,12 +38,26 @@ export function CommandList({ commands, showForm, onSelect, onDelete }: CommandL
                             Schedule: {cmd.run_at_secs ? `Scheduled for ${new Date(cmd.run_at_secs * 1000).toLocaleString()}` : cmd.interval_secs > 0 ? `Every ${cmd.interval_secs} seconds` : "Manual / One-time"}
                         </p>
                     </div>
-                    <button
-                        onClick={(e) => onDelete(cmd.id, e)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10 p-2 rounded-md transition-colors text-sm"
-                    >
-                        Delete
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className={`px-2 py-1 rounded text-xs font-bold ${states[cmd.id]?.is_running ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : states[cmd.id]?.is_active ? "bg-blue-500/20 text-blue-400" : "bg-zinc-800 text-zinc-400"}`}>
+                            {states[cmd.id]?.is_running ? "RUNNING" : states[cmd.id]?.is_active ? "SCHEDULED" : "STOPPED"}
+                        </div>
+                        {states[cmd.id]?.is_active ? (
+                            <button
+                                onClick={(e) => onStop(cmd.id, e)}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 px-3 py-1.5 rounded-md transition-colors text-sm border border-red-500/30 font-medium"
+                            >
+                                Stop
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => onStart(cmd.id, e)}
+                                className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 px-3 py-1.5 rounded-md transition-colors text-sm border border-emerald-500/30 font-medium"
+                            >
+                                Start
+                            </button>
+                        )}
+                    </div>
                 </div>
             ))}
         </>

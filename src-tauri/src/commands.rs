@@ -20,6 +20,7 @@ pub async fn register_command(
         command_str: command_str.clone(),
         interval_secs,
         run_at_secs,
+        actively_stopped: false,
     };
 
     {
@@ -56,6 +57,12 @@ pub async fn get_command_state(id: String, state: tauri::State<'_, AppState>) ->
 }
 
 #[tauri::command]
+pub async fn get_all_command_states(state: tauri::State<'_, AppState>) -> Result<std::collections::HashMap<String, CommandExecutionState>, String> {
+    let states = state.execution_states.lock().await;
+    Ok(states.clone())
+}
+
+#[tauri::command]
 pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
     {
         let mut handles = state.task_handles.lock().await;
@@ -76,12 +83,19 @@ pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_h
 }
 
 #[tauri::command]
-pub async fn stop_command(id: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
         }
+    }
+    {
+        let mut cmds = state.commands.lock().await;
+        if let Some(cmd) = cmds.get_mut(&id) {
+            cmd.actively_stopped = true;
+        }
+        save_commands(&app_handle, &cmds);
     }
     {
         let mut states = state.execution_states.lock().await;
@@ -102,7 +116,11 @@ pub async fn start_command(id: String, state: tauri::State<'_, AppState>, app_ha
         }
     }
     let cmd = {
-        let cmds = state.commands.lock().await;
+        let mut cmds = state.commands.lock().await;
+        if let Some(cmd) = cmds.get_mut(&id) {
+            cmd.actively_stopped = false;
+        }
+        save_commands(&app_handle, &cmds);
         cmds.get(&id).cloned()
     };
     if let Some(c) = cmd {
@@ -135,6 +153,7 @@ pub async fn edit_command(
             cmd.command_str = command_str;
             cmd.interval_secs = interval_secs;
             cmd.run_at_secs = run_at_secs;
+            cmd.actively_stopped = false;
         }
         save_commands(&app_handle, &cmds);
     }

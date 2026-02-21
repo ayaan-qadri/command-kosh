@@ -37,7 +37,9 @@ pub fn run() {
             let handles_ref = Arc::new(Mutex::new(HashMap::new()));
 
             for (id, cmd) in commands.iter() {
-                spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
+                if !cmd.actively_stopped {
+                    spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
+                }
             }
 
             let app_state = AppState {
@@ -53,6 +55,7 @@ pub fn run() {
             register_command,
             get_commands,
             get_command_state,
+            get_all_command_states,
             delete_command,
             stop_command,
             start_command,
