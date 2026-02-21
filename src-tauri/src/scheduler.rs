@@ -8,6 +8,9 @@ use tokio::time::{sleep, Duration};
 use tauri::Emitter;
 use crate::models::{CommandExecutionState, RegisteredCommand};
 
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 pub fn spawn_command_task(
     app_handle: tauri::AppHandle,
     cmd_id: String,
@@ -61,6 +64,8 @@ pub fn spawn_command_task(
                 let mut command_builder = if cfg!(target_os = "windows") {
                     let mut builder = tokio::process::Command::new("cmd");
                     builder.args(["/C", &cmd.command_str]);
+                    #[cfg(target_os = "windows")]
+                    builder.creation_flags(CREATE_NO_WINDOW);
                     builder
                 } else {
                     let mut builder = tokio::process::Command::new("sh");
