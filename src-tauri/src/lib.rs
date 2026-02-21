@@ -17,7 +17,9 @@ use commands::*;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             let mut commands = HashMap::new();
             let path = get_commands_file_path(app.handle());
@@ -37,7 +39,7 @@ pub fn run() {
             let handles_ref = Arc::new(Mutex::new(HashMap::new()));
 
             for (id, cmd) in commands.iter() {
-                if !cmd.actively_stopped {
+                if cmd.auto_start && !cmd.actively_stopped {
                     spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
                 }
             }

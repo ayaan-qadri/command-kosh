@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { enable, disable } from "@tauri-apps/plugin-autostart";
+import { sendNotification } from "@tauri-apps/plugin-notification";
 import { useState, useEffect } from "react";
 import "./App.css";
 
@@ -33,6 +35,20 @@ function App() {
     try {
       const fetchedCommands = await invoke<RegisteredCommand[]>("get_commands");
       setCommands(fetchedCommands);
+
+      try {
+        if (fetchedCommands.some(c => c.auto_start !== false)) {
+          await enable();
+        } else {
+          await disable();
+        }
+      } catch (err: any) {
+        console.error("Failed to configure OS autostart:", err);
+        sendNotification({
+          title: "Setup Failed",
+          body: "Failed to configure OS autostart. Your commands may not run automatically on startup."
+        });
+      }
     } catch (e) {
       console.error("Failed to fetch commands:", e);
     }

@@ -11,6 +11,7 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
     const [scheduleType, setScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
     const [intervalSecs, setIntervalSecs] = useState("60");
     const [datetime, setDatetime] = useState("");
+    const [autoStart, setAutoStart] = useState(true);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,11 +31,13 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                 commandStr,
                 intervalSecs: interval,
                 runAtSecs: runAt,
+                autoStart,
             });
             setName("");
             setCommandStr("");
             setIntervalSecs("60");
             setDatetime("");
+            setAutoStart(true);
             onSuccess();
         } catch (e) {
             console.error("Failed to register command:", e);
@@ -107,6 +110,22 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                             />
                         </div>
                     )}
+                </div>
+                <div>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={autoStart}
+                                onChange={(e) => setAutoStart(e.target.checked)}
+                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                            />
+                            <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
+                            </svg>
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
+                    </label>
                 </div>
                 <div className="pt-2">
                     <button type="submit" className="bg-teal-500 hover:bg-teal-400 text-zinc-950 font-medium px-6 py-2 rounded-md transition-colors w-full">

@@ -10,6 +10,7 @@ pub async fn register_command(
     command_str: String,
     interval_secs: u64,
     run_at_secs: Option<u64>,
+    auto_start: bool,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
@@ -20,7 +21,8 @@ pub async fn register_command(
         command_str: command_str.clone(),
         interval_secs,
         run_at_secs,
-        actively_stopped: false,
+        actively_stopped: !auto_start,
+        auto_start,
     };
 
     {
@@ -35,7 +37,9 @@ pub async fn register_command(
     let states_ref = Arc::clone(&state.execution_states);
     let handles_ref = Arc::clone(&state.task_handles);
 
-    spawn_command_task(app_handle, id.clone(), interval_secs, commands_ref, states_ref, handles_ref);
+    if auto_start {
+        spawn_command_task(app_handle, id.clone(), interval_secs, commands_ref, states_ref, handles_ref);
+    }
 
     Ok(id)
 }
@@ -143,6 +147,7 @@ pub async fn edit_command(
     command_str: String,
     interval_secs: u64,
     run_at_secs: Option<u64>,
+    auto_start: bool,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -153,7 +158,8 @@ pub async fn edit_command(
             cmd.command_str = command_str;
             cmd.interval_secs = interval_secs;
             cmd.run_at_secs = run_at_secs;
-            cmd.actively_stopped = false;
+            cmd.auto_start = auto_start;
+            cmd.actively_stopped = !auto_start;
         }
         save_commands(&app_handle, &cmds);
     }
@@ -163,13 +169,16 @@ pub async fn edit_command(
             handle.abort();
         }
     }
-    spawn_command_task(
-        app_handle,
-        id,
-        interval_secs,
-        Arc::clone(&state.commands),
-        Arc::clone(&state.execution_states),
-        Arc::clone(&state.task_handles),
-    );
+    
+    if auto_start {
+        spawn_command_task(
+            app_handle,
+            id,
+            interval_secs,
+            Arc::clone(&state.commands),
+            Arc::clone(&state.execution_states),
+            Arc::clone(&state.task_handles),
+        );
+    }
     Ok(())
 }

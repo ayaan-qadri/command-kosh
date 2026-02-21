@@ -32,6 +32,7 @@ export function CommandDetails({
     const [editScheduleType, setEditScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
     const [editIntervalSecs, setEditIntervalSecs] = useState("");
     const [editDatetime, setEditDatetime] = useState("");
+    const [editAutoStart, setEditAutoStart] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
@@ -119,6 +120,7 @@ export function CommandDetails({
         setIsEditing(true);
         setEditName(selectedCommand.name);
         setEditCommandStr(selectedCommand.command_str);
+        setEditAutoStart(selectedCommand.auto_start ?? true);
 
         if (selectedCommand.run_at_secs) {
             setEditScheduleType("datetime");
@@ -156,6 +158,7 @@ export function CommandDetails({
                 commandStr: editCommandStr,
                 intervalSecs: interval,
                 runAtSecs: runAt,
+                autoStart: editAutoStart,
             });
             fetchCommands();
             onCommandUpdated({
@@ -164,6 +167,7 @@ export function CommandDetails({
                 command_str: editCommandStr,
                 interval_secs: interval,
                 run_at_secs: runAt,
+                auto_start: editAutoStart,
             });
             setIsEditing(false);
         } catch (e) {
@@ -311,6 +315,22 @@ export function CommandDetails({
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                            <div>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editAutoStart}
+                                            onChange={(e) => setEditAutoStart(e.target.checked)}
+                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                                        />
+                                        <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
+                                        </svg>
+                                    </div>
+                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
+                                </label>
                             </div>
                             <div className="pt-4 flex gap-3">
                                 <button

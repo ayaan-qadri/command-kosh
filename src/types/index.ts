@@ -4,6 +4,7 @@ export interface RegisteredCommand {
     command_str: string;
     interval_secs: number;
     run_at_secs?: number | null;
+    auto_start: boolean;
 }
 
 export interface CommandExecutionState {
