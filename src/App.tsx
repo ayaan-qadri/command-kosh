@@ -37,10 +37,12 @@ function App() {
       setCommands(fetchedCommands);
 
       try {
-        if (fetchedCommands.some(c => c.auto_start !== false)) {
-          await enable();
-        } else {
-          await disable();
+        if (!import.meta.env.DEV) {
+          if (fetchedCommands.some(c => c.auto_start !== false)) {
+            await enable();
+          } else {
+            await disable();
+          }
         }
       } catch (err: any) {
         console.error("Failed to configure OS autostart:", err);
