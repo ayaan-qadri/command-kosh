@@ -120,7 +120,7 @@ export function CommandDetails({
         setIsEditing(true);
         setEditName(selectedCommand.name);
         setEditCommandStr(selectedCommand.command_str);
-        setEditAutoStart(selectedCommand.auto_start ?? true);
+        setEditAutoStart(selectedCommand.auto_start ?? false);
 
         if (selectedCommand.run_at_secs) {
             setEditScheduleType("datetime");

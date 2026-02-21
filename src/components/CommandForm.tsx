@@ -11,7 +11,7 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
     const [scheduleType, setScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
     const [intervalSecs, setIntervalSecs] = useState("60");
     const [datetime, setDatetime] = useState("");
-    const [autoStart, setAutoStart] = useState(true);
+    const [autoStart, setAutoStart] = useState(false);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,7 +37,7 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
             setCommandStr("");
             setIntervalSecs("60");
             setDatetime("");
-            setAutoStart(true);
+            setAutoStart(false);
             onSuccess();
         } catch (e) {
             console.error("Failed to register command:", e);
