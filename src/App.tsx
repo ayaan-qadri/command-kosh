@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import { sendNotification } from "@tauri-apps/plugin-notification";
 import { useState, useEffect } from "react";
+import { Plus, X } from "lucide-react";
 import "./App.css";
 
 import { RegisteredCommand, CommandExecutionState } from "./types";
@@ -93,7 +94,8 @@ function App() {
           onClick={() => setShowForm(!showForm)}
           className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] text-sm flex items-center gap-2"
         >
-          <span className="font-mono text-base leading-none">{showForm ? "✕" : "+"}</span> <span>{showForm ? "Cancel" : "New Command"}</span>
+          {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          <span>{showForm ? "Cancel" : "New Command"}</span>
         </button>
       </header>
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { Check, TerminalSquare } from "lucide-react";
 
 interface CommandFormProps {
     onSuccess: () => void;
@@ -120,16 +121,14 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                                 onChange={(e) => setAutoStart(e.target.checked)}
                                 className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
                             />
-                            <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
-                            </svg>
+                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
                         </div>
                         <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
                     </label>
                 </div>
                 <div className="pt-2">
                     <button type="submit" className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-6 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] w-full flex justify-center items-center gap-2">
-                        <span className="font-mono">{'>_'}</span> <span>Save and Schedule</span>
+                        <TerminalSquare className="w-5 h-5" /> <span>Save and Schedule</span>
                     </button>
                 </div>
             </form>

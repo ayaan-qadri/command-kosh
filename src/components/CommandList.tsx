@@ -1,3 +1,4 @@
+import { Zap } from "lucide-react";
 import { RegisteredCommand, CommandExecutionState } from "../types";
 
 interface CommandListProps {
@@ -14,7 +15,7 @@ export function CommandList({ commands, states, showForm, onSelect, onStart, onS
         return (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center flex flex-col items-center">
                 <div className="w-16 h-16 bg-zinc-800/80 rounded-full flex items-center justify-center mb-4 border border-zinc-700/50">
-                    <span className="text-2xl text-teal-400">⚡</span>
+                    <Zap className="w-8 h-8 text-teal-400" />
                 </div>
                 <p className="text-sm text-zinc-400 mb-6">Create your first command below to start scheduling background tasks.</p>
             </div>
