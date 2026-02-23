@@ -63,7 +63,9 @@ pub fn spawn_command_task(
 
                 let mut command_builder = if cfg!(target_os = "windows") {
                     let mut builder = tokio::process::Command::new("cmd");
-                    builder.args(["/C", &cmd.command_str]);
+                    builder.arg("/C");
+                    #[cfg(target_os = "windows")]
+                    builder.raw_arg(&cmd.command_str);
                     #[cfg(target_os = "windows")]
                     builder.creation_flags(CREATE_NO_WINDOW);
                     builder
