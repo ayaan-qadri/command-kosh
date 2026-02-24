@@ -7,6 +7,9 @@ export interface RegisteredCommand {
     auto_start: boolean;
     notify_on_failure: boolean;
     notify_on_success: boolean;
+    auto_restart_on_fail: boolean;
+    auto_restart_retries: number;
+    auto_run_on_complete: boolean;
 }
 
 export interface CommandExecutionState {

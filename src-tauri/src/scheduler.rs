@@ -30,6 +30,7 @@ pub fn spawn_command_task(
             }
         }
         let mut first_run = true;
+        let mut fail_retry_count = 0;
         loop {
             let cmd_to_run = {
                 let cmds = commands_ref.lock().await;
@@ -90,6 +91,8 @@ pub fn spawn_command_task(
 
                 command_builder.stdout(Stdio::piped()).stderr(Stdio::piped()).stdin(Stdio::null()).kill_on_drop(true);
 
+                let mut retry_immediately = false;
+
                 if let Ok(mut child) = command_builder.spawn() {
                     if let Some(stdout) = child.stdout.take() {
                         let mut reader = tokio::io::BufReader::new(stdout).lines();
@@ -129,16 +132,32 @@ pub fn spawn_command_task(
                     match status {
                         Ok(exit_status) => {
                             let success = exit_status.success();
-                            if success && cmd.notify_on_success {
-                                let _ = app_handle.notification().builder()
-                                    .title("Command Success")
-                                    .body(format!("Command '{}' executed successfully.", cmd.name))
-                                    .show();
-                            } else if !success && cmd.notify_on_failure {
-                                let _ = app_handle.notification().builder()
-                                    .title("Command Failed")
-                                    .body(format!("Command '{}' failed with exit code: {}", cmd.name, exit_status))
-                                    .show();
+                            if success {
+                                fail_retry_count = 0;
+                                if cmd.notify_on_success {
+                                    let _ = app_handle.notification().builder()
+                                        .title("Command Success")
+                                        .body(format!("Command '{}' executed successfully.", cmd.name))
+                                        .show();
+                                }
+                                if cmd.auto_run_on_complete {
+                                    retry_immediately = true;
+                                }
+                            } else {
+                                if cmd.notify_on_failure {
+                                    let _ = app_handle.notification().builder()
+                                        .title("Command Failed")
+                                        .body(format!("Command '{}' failed with exit code: {}", cmd.name, exit_status))
+                                        .show();
+                                }
+                                if cmd.auto_restart_on_fail && fail_retry_count < cmd.auto_restart_retries {
+                                    fail_retry_count += 1;
+                                    retry_immediately = true;
+                                } else if cmd.auto_run_on_complete {
+                                    // if it's set to run on complete, it overrides retry limits
+                                    fail_retry_count = 0;
+                                    retry_immediately = true;
+                                }
                             }
                         }
                         Err(e) => {
@@ -147,6 +166,13 @@ pub fn spawn_command_task(
                                     .title("Command Error")
                                     .body(format!("Command '{}' failed to execute: {}", cmd.name, e))
                                     .show();
+                            }
+                            if cmd.auto_restart_on_fail && fail_retry_count < cmd.auto_restart_retries {
+                                fail_retry_count += 1;
+                                retry_immediately = true;
+                            } else if cmd.auto_run_on_complete {
+                                fail_retry_count = 0;
+                                retry_immediately = true;
                             }
                         }
                     }
@@ -158,6 +184,11 @@ pub fn spawn_command_task(
                     }
                 }
                 app_handle.emit("command-finished", &cmd_id).ok();
+
+                if retry_immediately {
+                    sleep(Duration::from_millis(500)).await;
+                    continue;
+                }
             } else {
                 break;
             }

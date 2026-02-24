@@ -13,6 +13,9 @@ pub async fn register_command(
     auto_start: bool,
     notify_on_failure: bool,
     notify_on_success: bool,
+    auto_restart_on_fail: bool,
+    auto_restart_retries: u32,
+    auto_run_on_complete: bool,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
@@ -27,6 +30,9 @@ pub async fn register_command(
         auto_start,
         notify_on_failure,
         notify_on_success,
+        auto_restart_on_fail,
+        auto_restart_retries,
+        auto_run_on_complete,
     };
 
     {
@@ -155,6 +161,9 @@ pub async fn edit_command(
     auto_start: bool,
     notify_on_failure: bool,
     notify_on_success: bool,
+    auto_restart_on_fail: bool,
+    auto_restart_retries: u32,
+    auto_run_on_complete: bool,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -169,6 +178,9 @@ pub async fn edit_command(
             cmd.actively_stopped = !auto_start;
             cmd.notify_on_failure = notify_on_failure;
             cmd.notify_on_success = notify_on_success;
+            cmd.auto_restart_on_fail = auto_restart_on_fail;
+            cmd.auto_restart_retries = auto_restart_retries;
+            cmd.auto_run_on_complete = auto_run_on_complete;
         }
         save_commands(&app_handle, &cmds);
     }

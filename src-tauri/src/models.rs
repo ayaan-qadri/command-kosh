@@ -19,6 +19,12 @@ pub struct RegisteredCommand {
     pub notify_on_failure: bool,
     #[serde(default)]
     pub notify_on_success: bool,
+    #[serde(default)]
+    pub auto_restart_on_fail: bool,
+    #[serde(default)]
+    pub auto_restart_retries: u32,
+    #[serde(default)]
+    pub auto_run_on_complete: bool,
 }
 
 pub fn default_true() -> bool {

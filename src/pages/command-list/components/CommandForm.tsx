@@ -15,6 +15,9 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
     const [autoStart, setAutoStart] = useState(false);
     const [notifyOnFailure, setNotifyOnFailure] = useState(false);
     const [notifyOnSuccess, setNotifyOnSuccess] = useState(false);
+    const [autoRestartOnFail, setAutoRestartOnFail] = useState(false);
+    const [autoRestartRetries, setAutoRestartRetries] = useState("3");
+    const [autoRunOnComplete, setAutoRunOnComplete] = useState(false);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,6 +40,9 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                 autoStart,
                 notifyOnFailure,
                 notifyOnSuccess,
+                autoRestartOnFail,
+                autoRestartRetries: parseInt(autoRestartRetries) || 0,
+                autoRunOnComplete,
             });
             setName("");
             setCommandStr("");
@@ -45,6 +51,9 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
             setAutoStart(false);
             setNotifyOnFailure(false);
             setNotifyOnSuccess(false);
+            setAutoRestartOnFail(false);
+            setAutoRestartRetries("3");
+            setAutoRunOnComplete(false);
             onSuccess();
         } catch (e) {
             console.error("Failed to register command:", e);
@@ -156,6 +165,49 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                             <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
                         </div>
                         <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
+                    </label>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={autoRestartOnFail}
+                                onChange={(e) => setAutoRestartOnFail(e.target.checked)}
+                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-orange-500 checked:border-orange-500 transition-colors cursor-pointer"
+                            />
+                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run on failed</span>
+                    </label>
+
+                    {autoRestartOnFail && (
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-zinc-400">Retries:</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={autoRestartRetries}
+                                onChange={(e) => setAutoRestartRetries(e.target.value)}
+                                className="w-20 bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 text-zinc-100 focus:outline-none focus:border-teal-500 text-sm"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={autoRunOnComplete}
+                                onChange={(e) => setAutoRunOnComplete(e.target.checked)}
+                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer"
+                            />
+                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run command when completed or stopped</span>
                     </label>
                 </div>
 

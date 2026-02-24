@@ -42,6 +42,9 @@ export function CommandDetailsPage() {
     const [editAutoStart, setEditAutoStart] = useState(true);
     const [editNotifyOnFailure, setEditNotifyOnFailure] = useState(false);
     const [editNotifyOnSuccess, setEditNotifyOnSuccess] = useState(false);
+    const [editAutoRestartOnFail, setEditAutoRestartOnFail] = useState(false);
+    const [editAutoRestartRetries, setEditAutoRestartRetries] = useState("3");
+    const [editAutoRunOnComplete, setEditAutoRunOnComplete] = useState(false);
 
     const fetchCommands = async () => {
         try {
@@ -165,6 +168,9 @@ export function CommandDetailsPage() {
         setEditAutoStart(selectedCommand.auto_start ?? false);
         setEditNotifyOnFailure(selectedCommand.notify_on_failure ?? false);
         setEditNotifyOnSuccess(selectedCommand.notify_on_success ?? false);
+        setEditAutoRestartOnFail(selectedCommand.auto_restart_on_fail ?? false);
+        setEditAutoRestartRetries((selectedCommand.auto_restart_retries ?? 3).toString());
+        setEditAutoRunOnComplete(selectedCommand.auto_run_on_complete ?? false);
 
         if (selectedCommand.run_at_secs) {
             setEditScheduleType("datetime");
@@ -205,6 +211,9 @@ export function CommandDetailsPage() {
                 autoStart: editAutoStart,
                 notifyOnFailure: editNotifyOnFailure,
                 notifyOnSuccess: editNotifyOnSuccess,
+                autoRestartOnFail: editAutoRestartOnFail,
+                autoRestartRetries: parseInt(editAutoRestartRetries) || 0,
+                autoRunOnComplete: editAutoRunOnComplete,
             });
             await fetchCommands();
             setIsEditing(false);
@@ -406,6 +415,49 @@ export function CommandDetailsPage() {
                                         <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
                                     </div>
                                     <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
+                                </label>
+                            </div>
+
+                            <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editAutoRestartOnFail}
+                                            onChange={(e) => setEditAutoRestartOnFail(e.target.checked)}
+                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-orange-500 checked:border-orange-500 transition-colors cursor-pointer"
+                                        />
+                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                                    </div>
+                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run on failed</span>
+                                </label>
+
+                                {editAutoRestartOnFail && (
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-sm text-zinc-400">Retries:</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={editAutoRestartRetries}
+                                            onChange={(e) => setEditAutoRestartRetries(e.target.value)}
+                                            className="w-20 bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 text-zinc-100 focus:outline-none focus:border-teal-500 text-sm"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-2">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editAutoRunOnComplete}
+                                            onChange={(e) => setEditAutoRunOnComplete(e.target.checked)}
+                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer"
+                                        />
+                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                                    </div>
+                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run command when completed or stopped</span>
                                 </label>
                             </div>
 
