@@ -15,6 +15,10 @@ pub struct RegisteredCommand {
     pub actively_stopped: bool,
     #[serde(default = "default_true")]
     pub auto_start: bool,
+    #[serde(default)]
+    pub notify_on_failure: bool,
+    #[serde(default)]
+    pub notify_on_success: bool,
 }
 
 pub fn default_true() -> bool {

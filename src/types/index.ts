@@ -5,6 +5,8 @@ export interface RegisteredCommand {
     interval_secs: number;
     run_at_secs?: number | null;
     auto_start: boolean;
+    notify_on_failure: boolean;
+    notify_on_success: boolean;
 }
 
 export interface CommandExecutionState {

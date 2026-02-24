@@ -13,6 +13,8 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
     const [intervalSecs, setIntervalSecs] = useState("60");
     const [datetime, setDatetime] = useState("");
     const [autoStart, setAutoStart] = useState(false);
+    const [notifyOnFailure, setNotifyOnFailure] = useState(false);
+    const [notifyOnSuccess, setNotifyOnSuccess] = useState(false);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,12 +35,16 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                 intervalSecs: interval,
                 runAtSecs: runAt,
                 autoStart,
+                notifyOnFailure,
+                notifyOnSuccess,
             });
             setName("");
             setCommandStr("");
             setIntervalSecs("60");
             setDatetime("");
             setAutoStart(false);
+            setNotifyOnFailure(false);
+            setNotifyOnSuccess(false);
             onSuccess();
         } catch (e) {
             console.error("Failed to register command:", e);
@@ -126,6 +132,33 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                         <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
                     </label>
                 </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={notifyOnFailure}
+                                onChange={(e) => setNotifyOnFailure(e.target.checked)}
+                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-red-500 checked:border-red-500 transition-colors cursor-pointer"
+                            />
+                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on failure</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={notifyOnSuccess}
+                                onChange={(e) => setNotifyOnSuccess(e.target.checked)}
+                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                            />
+                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
+                    </label>
+                </div>
+
                 <div className="pt-2">
                     <button type="submit" className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-6 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] w-full flex justify-center items-center gap-2">
                         <TerminalSquare className="w-5 h-5" /> <span>Save and Schedule</span>

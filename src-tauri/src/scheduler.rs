@@ -6,6 +6,7 @@ use tokio::io::AsyncBufReadExt;
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 use tauri::Emitter;
+use tauri_plugin_notification::NotificationExt;
 use crate::models::{CommandExecutionState, RegisteredCommand};
 
 #[cfg(target_os = "windows")]
@@ -124,7 +125,31 @@ pub fn spawn_command_task(
                         });
                     }
 
-                    let _ = child.wait().await;
+                    let status = child.wait().await;
+                    match status {
+                        Ok(exit_status) => {
+                            let success = exit_status.success();
+                            if success && cmd.notify_on_success {
+                                let _ = app_handle.notification().builder()
+                                    .title("Command Success")
+                                    .body(format!("Command '{}' executed successfully.", cmd.name))
+                                    .show();
+                            } else if !success && cmd.notify_on_failure {
+                                let _ = app_handle.notification().builder()
+                                    .title("Command Failed")
+                                    .body(format!("Command '{}' failed with exit code: {}", cmd.name, exit_status))
+                                    .show();
+                            }
+                        }
+                        Err(e) => {
+                            if cmd.notify_on_failure {
+                                let _ = app_handle.notification().builder()
+                                    .title("Command Error")
+                                    .body(format!("Command '{}' failed to execute: {}", cmd.name, e))
+                                    .show();
+                            }
+                        }
+                    }
                 }
 
                 {

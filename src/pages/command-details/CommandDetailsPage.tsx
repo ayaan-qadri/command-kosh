@@ -40,6 +40,8 @@ export function CommandDetailsPage() {
     const [editIntervalSecs, setEditIntervalSecs] = useState("");
     const [editDatetime, setEditDatetime] = useState("");
     const [editAutoStart, setEditAutoStart] = useState(true);
+    const [editNotifyOnFailure, setEditNotifyOnFailure] = useState(false);
+    const [editNotifyOnSuccess, setEditNotifyOnSuccess] = useState(false);
 
     const fetchCommands = async () => {
         try {
@@ -161,6 +163,8 @@ export function CommandDetailsPage() {
         setEditName(selectedCommand.name);
         setEditCommandStr(selectedCommand.command_str);
         setEditAutoStart(selectedCommand.auto_start ?? false);
+        setEditNotifyOnFailure(selectedCommand.notify_on_failure ?? false);
+        setEditNotifyOnSuccess(selectedCommand.notify_on_success ?? false);
 
         if (selectedCommand.run_at_secs) {
             setEditScheduleType("datetime");
@@ -199,6 +203,8 @@ export function CommandDetailsPage() {
                 intervalSecs: interval,
                 runAtSecs: runAt,
                 autoStart: editAutoStart,
+                notifyOnFailure: editNotifyOnFailure,
+                notifyOnSuccess: editNotifyOnSuccess,
             });
             await fetchCommands();
             setIsEditing(false);
@@ -376,6 +382,33 @@ export function CommandDetailsPage() {
                                     <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
                                 </label>
                             </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editNotifyOnFailure}
+                                            onChange={(e) => setEditNotifyOnFailure(e.target.checked)}
+                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-red-500 checked:border-red-500 transition-colors cursor-pointer"
+                                        />
+                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                                    </div>
+                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on failure</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editNotifyOnSuccess}
+                                            onChange={(e) => setEditNotifyOnSuccess(e.target.checked)}
+                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                                        />
+                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                                    </div>
+                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
+                                </label>
+                            </div>
+
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
