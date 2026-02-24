@@ -20,7 +20,7 @@ use commands::*;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
         .setup(|app| {
             // --- System Tray Setup ---
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
@@ -73,12 +73,23 @@ pub fn run() {
                 .build(app)?;
 
             // --- Show window on launch (non-autostart) ---
-            // Check if any auto_start commands exist; if the app was launched
-            // by the user clicking the icon (not autostart), show the window.
-            // We always show the window on launch; the user can hide it via tray.
+            // If the app was launched with --hidden (e.g., from autostart), keep it hidden.
+            let args: Vec<String> = std::env::args().collect();
+            let is_hidden = args.iter().any(|arg| arg == "--hidden");
+
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
+                if !is_hidden {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+
+                let window_clone = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = window_clone.hide();
+                    }
+                });
             }
 
             // --- Load commands from store ---
@@ -122,7 +133,8 @@ pub fn run() {
             delete_command,
             stop_command,
             start_command,
-            edit_command
+            edit_command,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

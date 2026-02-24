@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { sendNotification } from "@tauri-apps/plugin-notification";
-import { Plus, X, AlertTriangle } from "lucide-react";
+import { Plus, X, AlertTriangle, Power } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { RegisteredCommand, CommandExecutionState } from "../../types";
@@ -14,6 +14,8 @@ export function CommandListPage() {
     const [commandStates, setCommandStates] = useState<Record<string, CommandExecutionState>>({});
     const [showForm, setShowForm] = useState(false);
     const [showAutostartBanner, setShowAutostartBanner] = useState(false);
+    const [showQuitModal, setShowQuitModal] = useState(false);
+    const [dontAskQuit, setDontAskQuit] = useState(false);
     const navigate = useNavigate();
 
     const fetchStates = async () => {
@@ -71,13 +73,37 @@ export function CommandListPage() {
                     <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">Command Kosh</h1>
                     <p className="text-xs text-zinc-400 mt-1">Registry & Scheduler</p>
                 </div>
-                <button
-                    onClick={() => setShowForm(!showForm)}
-                    className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] text-sm flex items-center gap-2"
-                >
-                    {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                    <span>{showForm ? "Cancel" : "New Command"}</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="group relative">
+                        <button
+                            onClick={async () => {
+                                if (localStorage.getItem("hideQuitConfirm") === "true") {
+                                    await invoke("quit_app");
+                                } else {
+                                    setShowQuitModal(true);
+                                }
+                            }}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 hover:border-red-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] text-sm flex items-center gap-2"
+                        >
+                            <Power className="w-4 h-4" />
+                            <span>Quit App</span>
+                        </button>
+
+                        {/* Tooltip */}
+                        <div className="absolute top-full mt-2 right-0 w-64 bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 p-3 leading-relaxed">
+                            <div className="absolute -top-1.5 right-6 w-3 h-3 bg-zinc-900 border-l border-t border-zinc-700 transform rotate-45"></div>
+                            <strong className="block text-zinc-100 mb-1">Why quit the app?</strong>
+                            Closing the window only hides the app to the system tray so your commands can keep running in the background. Use this button to completely terminate the application and absolutely stop all scheduled jobs right now.
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] text-sm flex items-center gap-2"
+                    >
+                        {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                        <span>{showForm ? "Cancel" : "New Command"}</span>
+                    </button>
+                </div>
             </header>
 
             {showAutostartBanner && (
@@ -115,7 +141,56 @@ export function CommandListPage() {
                 </div>
             )}
 
-            <main className="flex-1 p-6">
+            {showQuitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-100">
+                                <span className="bg-red-500/20 p-1.5 rounded-full flex-shrink-0">
+                                    <Power className="w-5 h-5 text-red-500" />
+                                </span>
+                                Quit App?
+                            </h2>
+                            <p className="text-sm text-zinc-400 mt-3 leading-relaxed">
+                                Are you sure you want to quit? This will <strong className="text-zinc-200 font-medium">terminate all running jobs</strong> immediately.
+                            </p>
+
+                            <label className="flex items-center gap-2 mt-5 text-sm text-zinc-300 cursor-pointer w-fit group selection:bg-transparent">
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-zinc-700 bg-zinc-800 text-red-500 focus:ring-red-500/50 focus:ring-offset-zinc-900 w-4 h-4 transition-colors cursor-pointer accent-red-500"
+                                    checked={dontAskQuit}
+                                    onChange={(e) => setDontAskQuit(e.target.checked)}
+                                />
+                                <span className="group-hover:text-zinc-100 transition-colors">Don't ask me again</span>
+                            </label>
+                        </div>
+
+                        <div className="flex bg-zinc-950/50 p-4 border-t border-zinc-800/80 justify-end gap-3 rounded-b-xl">
+                            <button
+                                onClick={() => setShowQuitModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-800/50 hover:bg-zinc-700/80 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (dontAskQuit) {
+                                        localStorage.setItem("hideQuitConfirm", "true");
+                                    }
+                                    await invoke("quit_app");
+                                }}
+                                className="px-5 py-2 text-sm font-medium text-white bg-red-500/90 hover:bg-red-500 rounded-lg transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2"
+                            >
+                                <Power className="w-4 h-4" />
+                                Quit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <main className="flex-1 p-6 z-0 relative">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {showForm && (
                         <CommandForm

@@ -203,3 +203,9 @@ pub async fn edit_command(
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn quit_app(app_handle: tauri::AppHandle) -> Result<(), String> {
+    app_handle.exit(0);
+    Ok(())
+}
