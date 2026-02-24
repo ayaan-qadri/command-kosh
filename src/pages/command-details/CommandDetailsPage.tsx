@@ -2,23 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Check, TerminalSquare, ArrowLeft } from "lucide-react";
-import { RegisteredCommand, CommandExecutionState } from "../types";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { RegisteredCommand, CommandExecutionState } from "../../types";
 
-interface CommandDetailsProps {
-    selectedCommand: RegisteredCommand;
-    onBack: () => void;
-    onCommandUpdated: (cmd: RegisteredCommand) => void;
-    fetchCommands: () => void;
-    onDelete: () => void;
-}
+export function CommandDetailsPage() {
+    // Get command id from route params using the Route's context later
+    // but the Route is defined elsewhere, so we can use useParams
+    const { commandId } = useParams({ strict: false });
+    const navigate = useNavigate();
 
-export function CommandDetails({
-    selectedCommand,
-    onBack,
-    onCommandUpdated,
-    fetchCommands,
-    onDelete,
-}: CommandDetailsProps) {
+    const [selectedCommand, setSelectedCommand] = useState<RegisteredCommand | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [detailsState, setDetailsState] = useState<CommandExecutionState>({
         is_running: false,
         is_active: false,
@@ -35,12 +30,33 @@ export function CommandDetails({
     const [editDatetime, setEditDatetime] = useState("");
     const [editAutoStart, setEditAutoStart] = useState(true);
 
+    const fetchCommands = async () => {
+        try {
+            const fetchedCommands = await invoke<RegisteredCommand[]>("get_commands");
+            const cmd = fetchedCommands.find((c) => c.id === commandId);
+            if (cmd) {
+                setSelectedCommand(cmd);
+            } else {
+                navigate({ to: '/' });
+            }
+        } catch (e) {
+            console.error("Failed to fetch commands:", e);
+            navigate({ to: '/' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         let isMounted = true;
+
+        fetchCommands();
+
         const fetchState = async () => {
+            if (!commandId) return;
             try {
                 const state = await invoke<CommandExecutionState>("get_command_state", {
-                    id: selectedCommand.id,
+                    id: commandId,
                 });
                 if (isMounted) setDetailsState(state);
             } catch (e) {
@@ -57,7 +73,7 @@ export function CommandDetails({
             try {
                 const unlistens = await Promise.all([
                     listen<[string, string]>("command-output", (event) => {
-                        if (event.payload[0] === selectedCommand.id) {
+                        if (event.payload[0] === commandId) {
                             setDetailsState((prev) => ({
                                 ...prev,
                                 logs: [...prev.logs, event.payload[1]].slice(-1000),
@@ -65,11 +81,11 @@ export function CommandDetails({
                         }
                     }),
                     listen<string>("command-started", (event) => {
-                        if (event.payload === selectedCommand.id)
+                        if (event.payload === commandId)
                             setDetailsState((prev) => ({ ...prev, is_running: true }));
                     }),
                     listen<string>("command-finished", (event) => {
-                        if (event.payload === selectedCommand.id)
+                        if (event.payload === commandId)
                             setDetailsState((prev) => ({ ...prev, is_running: false }));
                     }),
                 ]);
@@ -91,7 +107,7 @@ export function CommandDetails({
             if (unlistenStarted) unlistenStarted();
             if (unlistenFinished) unlistenFinished();
         };
-    }, [selectedCommand.id]);
+    }, [commandId]);
 
     useEffect(() => {
         if (detailsState.logs.length > 0) {
@@ -101,7 +117,7 @@ export function CommandDetails({
 
     const handleStop = async () => {
         try {
-            await invoke("stop_command", { id: selectedCommand.id });
+            await invoke("stop_command", { id: commandId });
             setDetailsState((prev) => ({ ...prev, is_running: false, is_active: false }));
         } catch (e) {
             console.error("Failed to stop command:", e);
@@ -110,14 +126,24 @@ export function CommandDetails({
 
     const handleStart = async () => {
         try {
-            await invoke("start_command", { id: selectedCommand.id });
+            await invoke("start_command", { id: commandId });
             setDetailsState((prev) => ({ ...prev, is_running: true, is_active: true }));
         } catch (e) {
             console.error("Failed to start command:", e);
         }
     };
 
+    const handleDelete = async () => {
+        try {
+            await invoke("delete_command", { id: commandId });
+            navigate({ to: "/" });
+        } catch (e) {
+            console.error("Failed to delete command:", e);
+        }
+    };
+
     const startEdit = () => {
+        if (!selectedCommand) return;
         setIsEditing(true);
         setEditName(selectedCommand.name);
         setEditCommandStr(selectedCommand.command_str);
@@ -154,34 +180,34 @@ export function CommandDetails({
             }
 
             await invoke("edit_command", {
-                id: selectedCommand.id,
+                id: commandId,
                 name: editName,
                 commandStr: editCommandStr,
                 intervalSecs: interval,
                 runAtSecs: runAt,
                 autoStart: editAutoStart,
             });
-            fetchCommands();
-            onCommandUpdated({
-                ...selectedCommand,
-                name: editName,
-                command_str: editCommandStr,
-                interval_secs: interval,
-                run_at_secs: runAt,
-                auto_start: editAutoStart,
-            });
+            await fetchCommands();
             setIsEditing(false);
         } catch (e) {
             console.error("Failed to edit command:", e);
         }
     };
 
+    if (isLoading || !selectedCommand) {
+        return (
+            <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+                <div className="text-zinc-500">Loading...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
             <header className="px-6 py-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md sticky top-0 z-10 w-full">
                 <div className="flex items-center gap-4 truncate">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate({ to: "/" })}
                         className="text-zinc-400 hover:text-white transition bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1.5 rounded-md text-sm font-medium shrink-0 flex items-center gap-1.5"
                     >
                         <ArrowLeft className="w-4 h-4" /> Back
@@ -218,7 +244,7 @@ export function CommandDetails({
                         Edit
                     </button>
                     <button
-                        onClick={onDelete}
+                        onClick={handleDelete}
                         className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-3 py-1.5 rounded-md text-sm transition font-medium"
                     >
                         Delete

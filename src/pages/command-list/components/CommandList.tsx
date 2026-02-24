@@ -1,5 +1,5 @@
 import { Zap } from "lucide-react";
-import { RegisteredCommand, CommandExecutionState } from "../types";
+import { RegisteredCommand, CommandExecutionState } from "../../../types";
 
 interface CommandListProps {
     commands: RegisteredCommand[];
