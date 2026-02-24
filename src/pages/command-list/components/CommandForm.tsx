@@ -1,59 +1,88 @@
-import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Check, TerminalSquare } from "lucide-react";
+import { useForm, SubmitHandler } from "react-hook-form";
+
+const FORM_CLASSES = {
+    label: "block text-sm text-zinc-400 mb-1",
+    input: "w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500",
+    checkboxWrapper: "flex items-center gap-2 cursor-pointer group",
+    checkboxContainer: "relative flex items-center",
+    checkboxInputBase: "peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 transition-colors cursor-pointer",
+    checkboxIcon: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]",
+    checkboxLabel: "text-sm text-zinc-300 group-hover:text-white transition-colors",
+};
 
 interface CommandFormProps {
     onSuccess: () => void;
 }
 
-export function CommandForm({ onSuccess }: CommandFormProps) {
-    const [name, setName] = useState("");
-    const [commandStr, setCommandStr] = useState("");
-    const [scheduleType, setScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
-    const [intervalSecs, setIntervalSecs] = useState("60");
-    const [datetime, setDatetime] = useState("");
-    const [autoStart, setAutoStart] = useState(false);
-    const [notifyOnFailure, setNotifyOnFailure] = useState(false);
-    const [notifyOnSuccess, setNotifyOnSuccess] = useState(false);
-    const [autoRestartOnFail, setAutoRestartOnFail] = useState(false);
-    const [autoRestartRetries, setAutoRestartRetries] = useState("3");
-    const [autoRunOnComplete, setAutoRunOnComplete] = useState(false);
+type ScheduleType = "manual" | "interval" | "datetime";
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
+interface FormValues {
+    name: string;
+    commandStr: string;
+    scheduleType: ScheduleType;
+    intervalSecs: string;
+    datetime: string;
+    autoStart: boolean;
+    notifyOnFailure: boolean;
+    notifyOnSuccess: boolean;
+    autoRestartOnFail: boolean;
+    autoRestartRetries: string;
+    autoRunOnComplete: boolean;
+}
+
+export function CommandForm({ onSuccess }: CommandFormProps) {
+    const {
+        register,
+        handleSubmit,
+        watch,
+        reset,
+    } = useForm<FormValues>({
+        defaultValues: {
+            name: "",
+            commandStr: "",
+            scheduleType: "interval",
+            intervalSecs: "60",
+            datetime: "",
+            autoStart: false,
+            notifyOnFailure: false,
+            notifyOnSuccess: false,
+            autoRestartOnFail: false,
+            autoRestartRetries: "3",
+            autoRunOnComplete: false,
+        },
+    });
+
+    const scheduleType = watch("scheduleType");
+    const autoRestartOnFail = watch("autoRestartOnFail");
+
+    const onSubmit: SubmitHandler<FormValues> = async (data) => {
         try {
             let interval = 0;
             let runAt: number | null = null;
-            if (scheduleType === "interval") {
-                interval = parseInt(intervalSecs) || 0;
-            } else if (scheduleType === "datetime") {
-                if (datetime) {
-                    runAt = Math.floor(new Date(datetime).getTime() / 1000);
+            if (data.scheduleType === "interval") {
+                interval = parseInt(data.intervalSecs) || 0;
+            } else if (data.scheduleType === "datetime") {
+                if (data.datetime) {
+                    runAt = Math.floor(new Date(data.datetime).getTime() / 1000);
                 }
             }
 
             await invoke("register_command", {
-                name,
-                commandStr,
+                name: data.name,
+                commandStr: data.commandStr,
                 intervalSecs: interval,
                 runAtSecs: runAt,
-                autoStart,
-                notifyOnFailure,
-                notifyOnSuccess,
-                autoRestartOnFail,
-                autoRestartRetries: parseInt(autoRestartRetries) || 0,
-                autoRunOnComplete,
+                autoStart: data.autoStart,
+                notifyOnFailure: data.notifyOnFailure,
+                notifyOnSuccess: data.notifyOnSuccess,
+                autoRestartOnFail: data.autoRestartOnFail,
+                autoRestartRetries: parseInt(data.autoRestartRetries) || 0,
+                autoRunOnComplete: data.autoRunOnComplete,
             });
-            setName("");
-            setCommandStr("");
-            setIntervalSecs("60");
-            setDatetime("");
-            setAutoStart(false);
-            setNotifyOnFailure(false);
-            setNotifyOnSuccess(false);
-            setAutoRestartOnFail(false);
-            setAutoRestartRetries("3");
-            setAutoRunOnComplete(false);
+
+            reset();
             onSuccess();
         } catch (e) {
             console.error("Failed to register command:", e);
@@ -63,36 +92,31 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
     return (
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-xl">
             <h2 className="text-lg font-bold mb-4">Register New Command</h2>
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                    <label className="block text-sm text-zinc-400 mb-1">Name / Identifier</label>
+                    <label className={FORM_CLASSES.label}>Name / Identifier</label>
                     <input
                         type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Daily Backup"
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                        className={FORM_CLASSES.input}
+                        {...register("name", { required: true })}
                     />
                 </div>
                 <div>
-                    <label className="block text-sm text-zinc-400 mb-1">Command String (OS Executable)</label>
+                    <label className={FORM_CLASSES.label}>Command String (OS Executable)</label>
                     <textarea
-                        required
-                        value={commandStr}
-                        onChange={(e) => setCommandStr(e.target.value)}
                         placeholder='e.g. echo "hello" > log.txt'
                         rows={3}
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm resize-y"
+                        className={`${FORM_CLASSES.input} font-mono text-sm resize-y`}
+                        {...register("commandStr", { required: true })}
                     />
                 </div>
                 <div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Schedule Type</label>
+                        <label className={FORM_CLASSES.label}>Schedule Type</label>
                         <select
-                            value={scheduleType}
-                            onChange={(e) => setScheduleType(e.target.value as any)}
-                            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                            className={FORM_CLASSES.input}
+                            {...register("scheduleType")}
                         >
                             <option value="manual">Run Once Immediately</option>
                             <option value="interval">Recurring Interval</option>
@@ -102,84 +126,76 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
 
                     {scheduleType === "interval" && (
                         <div>
-                            <label className="block text-sm text-zinc-400 mb-1">Interval in Seconds</label>
+                            <label className={FORM_CLASSES.label}>Interval in Seconds</label>
                             <input
                                 type="number"
                                 min="1"
-                                required
-                                value={intervalSecs}
-                                onChange={(e) => setIntervalSecs(e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                                className={FORM_CLASSES.input}
+                                {...register("intervalSecs", { required: scheduleType === "interval" })}
                             />
                         </div>
                     )}
 
                     {scheduleType === "datetime" && (
                         <div>
-                            <label className="block text-sm text-zinc-400 mb-1">Target Date and Time</label>
+                            <label className={FORM_CLASSES.label}>Target Date and Time</label>
                             <input
                                 type="datetime-local"
-                                required
-                                value={datetime}
-                                onChange={(e) => setDatetime(e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
+                                className={FORM_CLASSES.input}
+                                {...register("datetime", { required: scheduleType === "datetime" })}
                             />
                         </div>
                     )}
                 </div>
                 <div>
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center">
+                    <label className={FORM_CLASSES.checkboxWrapper}>
+                        <div className={FORM_CLASSES.checkboxContainer}>
                             <input
                                 type="checkbox"
-                                checked={autoStart}
-                                onChange={(e) => setAutoStart(e.target.checked)}
-                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                                className={`${FORM_CLASSES.checkboxInputBase} checked:bg-teal-500 checked:border-teal-500`}
+                                {...register("autoStart")}
                             />
-                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                            <Check className={FORM_CLASSES.checkboxIcon} />
                         </div>
-                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
+                        <span className={FORM_CLASSES.checkboxLabel}>Start automatically on application launch</span>
                     </label>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center">
+                    <label className={FORM_CLASSES.checkboxWrapper}>
+                        <div className={FORM_CLASSES.checkboxContainer}>
                             <input
                                 type="checkbox"
-                                checked={notifyOnFailure}
-                                onChange={(e) => setNotifyOnFailure(e.target.checked)}
-                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-red-500 checked:border-red-500 transition-colors cursor-pointer"
+                                className={`${FORM_CLASSES.checkboxInputBase} checked:bg-red-500 checked:border-red-500`}
+                                {...register("notifyOnFailure")}
                             />
-                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                            <Check className={FORM_CLASSES.checkboxIcon} />
                         </div>
-                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on failure</span>
+                        <span className={FORM_CLASSES.checkboxLabel}>Notify on failure</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center">
+                    <label className={FORM_CLASSES.checkboxWrapper}>
+                        <div className={FORM_CLASSES.checkboxContainer}>
                             <input
                                 type="checkbox"
-                                checked={notifyOnSuccess}
-                                onChange={(e) => setNotifyOnSuccess(e.target.checked)}
-                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
+                                className={`${FORM_CLASSES.checkboxInputBase} checked:bg-teal-500 checked:border-teal-500`}
+                                {...register("notifyOnSuccess")}
                             />
-                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                            <Check className={FORM_CLASSES.checkboxIcon} />
                         </div>
-                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
+                        <span className={FORM_CLASSES.checkboxLabel}>Notify on success</span>
                     </label>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center">
+                    <label className={FORM_CLASSES.checkboxWrapper}>
+                        <div className={FORM_CLASSES.checkboxContainer}>
                             <input
                                 type="checkbox"
-                                checked={autoRestartOnFail}
-                                onChange={(e) => setAutoRestartOnFail(e.target.checked)}
-                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-orange-500 checked:border-orange-500 transition-colors cursor-pointer"
+                                className={`${FORM_CLASSES.checkboxInputBase} checked:bg-orange-500 checked:border-orange-500`}
+                                {...register("autoRestartOnFail")}
                             />
-                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                            <Check className={FORM_CLASSES.checkboxIcon} />
                         </div>
-                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run on failed</span>
+                        <span className={FORM_CLASSES.checkboxLabel}>Auto re-run on failed</span>
                     </label>
 
                     {autoRestartOnFail && (
@@ -188,26 +204,24 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                             <input
                                 type="number"
                                 min="1"
-                                value={autoRestartRetries}
-                                onChange={(e) => setAutoRestartRetries(e.target.value)}
                                 className="w-20 bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 text-zinc-100 focus:outline-none focus:border-teal-500 text-sm"
+                                {...register("autoRestartRetries")}
                             />
                         </div>
                     )}
                 </div>
 
                 <div className="pt-2">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center">
+                    <label className={FORM_CLASSES.checkboxWrapper}>
+                        <div className={FORM_CLASSES.checkboxContainer}>
                             <input
                                 type="checkbox"
-                                checked={autoRunOnComplete}
-                                onChange={(e) => setAutoRunOnComplete(e.target.checked)}
-                                className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer"
+                                className={`${FORM_CLASSES.checkboxInputBase} checked:bg-blue-500 checked:border-blue-500`}
+                                {...register("autoRunOnComplete")}
                             />
-                            <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
+                            <Check className={FORM_CLASSES.checkboxIcon} />
                         </div>
-                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run command when completed or stopped</span>
+                        <span className={FORM_CLASSES.checkboxLabel}>Auto re-run command when completed or stopped</span>
                     </label>
                 </div>
 
@@ -220,3 +234,4 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
         </div>
     );
 }
+

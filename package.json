@@ -16,7 +16,8 @@
     "@tauri-apps/plugin-notification": "^2.3.3",
     "lucide-react": "^0.575.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.71.2"
   },
   "devDependencies": {
     "@tanstack/router-plugin": "^1.162.9",
