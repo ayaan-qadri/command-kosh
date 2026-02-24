@@ -42,9 +42,21 @@ pub fn spawn_command_task(
                         if let Ok(sys_time) = SystemTime::now().duration_since(UNIX_EPOCH) {
                             let now = sys_time.as_secs();
                             if target > now {
+                                {
+                                    let mut st = states_ref.lock().await;
+                                    if let Some(s) = st.get_mut(&cmd_id) {
+                                        s.next_run_at = Some(target);
+                                    }
+                                }
                                 sleep(Duration::from_secs(target - now)).await;
                             }
                         }
+                    }
+                }
+                {
+                    let mut st = states_ref.lock().await;
+                    if let Some(s) = st.get_mut(&cmd_id) {
+                        s.next_run_at = None;
                     }
                 }
 
@@ -126,8 +138,21 @@ pub fn spawn_command_task(
             }
 
             if interval_secs > 0 {
+                let next_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + interval_secs;
+                {
+                    let mut st = states_ref.lock().await;
+                    if let Some(s) = st.get_mut(&cmd_id) {
+                        s.next_run_at = Some(next_time);
+                    }
+                }
                 sleep(Duration::from_secs(interval_secs)).await;
             } else {
+                {
+                    let mut st = states_ref.lock().await;
+                    if let Some(s) = st.get_mut(&cmd_id) {
+                        s.next_run_at = None;
+                    }
+                }
                 break; // One-time execution
             }
         }
@@ -135,6 +160,7 @@ pub fn spawn_command_task(
             let mut st = states_ref.lock().await;
             if let Some(s) = st.get_mut(&cmd_id) {
                 s.is_active = false;
+                s.next_run_at = None;
             }
         }
     });

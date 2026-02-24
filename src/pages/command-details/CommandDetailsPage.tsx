@@ -5,6 +5,16 @@ import { Check, TerminalSquare, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
+function formatTimeRemaining(seconds: number) {
+    if (seconds <= 0) return "soon...";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+}
+
 export function CommandDetailsPage() {
     // Get command id from route params using the Route's context later
     // but the Route is defined elsewhere, so we can use useParams
@@ -20,6 +30,7 @@ export function CommandDetailsPage() {
         logs: [],
     });
     const logsEndRef = useRef<HTMLDivElement>(null);
+    const [now, setNow] = useState(Date.now() / 1000);
 
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
@@ -99,10 +110,12 @@ export function CommandDetailsPage() {
         setupListeners();
 
         const interval = setInterval(fetchState, 2000);
+        const secInterval = setInterval(() => setNow(Date.now() / 1000), 1000);
 
         return () => {
             isMounted = false;
             clearInterval(interval);
+            clearInterval(secInterval);
             if (unlistenOutput) unlistenOutput();
             if (unlistenStarted) unlistenStarted();
             if (unlistenFinished) unlistenFinished();
@@ -222,6 +235,12 @@ export function CommandDetailsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
+                    {detailsState.next_run_at && !detailsState.is_running && detailsState.is_active && (
+                        <div className="text-sm font-mono text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded border border-zinc-700 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                            Next run in: {formatTimeRemaining(detailsState.next_run_at - now)}
+                        </div>
+                    )}
                     <div
                         className={`px-2 py-1 rounded text-xs font-bold ${detailsState.is_running
                             ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
@@ -292,12 +311,12 @@ export function CommandDetailsPage() {
                                 <label className="block text-sm text-zinc-400 mb-1">
                                     Command String (OS Executable)
                                 </label>
-                                <input
-                                    type="text"
+                                <textarea
                                     required
                                     value={editCommandStr}
                                     onChange={(e) => setEditCommandStr(e.target.value)}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm"
+                                    rows={3}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm resize-y"
                                 />
                             </div>
                             <div>

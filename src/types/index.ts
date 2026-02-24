@@ -11,4 +11,5 @@ export interface CommandExecutionState {
     is_running: boolean;
     is_active: boolean;
     logs: string[];
+    next_run_at?: number | null;
 }

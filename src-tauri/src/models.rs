@@ -26,6 +26,7 @@ pub struct CommandExecutionState {
     pub is_running: bool,
     pub is_active: bool,
     pub logs: Vec<String>,
+    pub next_run_at: Option<u64>,
 }
 
 pub struct AppState {

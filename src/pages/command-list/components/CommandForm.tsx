@@ -62,13 +62,13 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                 </div>
                 <div>
                     <label className="block text-sm text-zinc-400 mb-1">Command String (OS Executable)</label>
-                    <input
-                        type="text"
+                    <textarea
                         required
                         value={commandStr}
                         onChange={(e) => setCommandStr(e.target.value)}
                         placeholder='e.g. echo "hello" > log.txt'
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm"
+                        rows={3}
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm resize-y"
                     />
                 </div>
                 <div>

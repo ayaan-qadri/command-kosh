@@ -106,6 +106,7 @@ pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_han
         if let Some(st) = states.get_mut(&id) {
             st.is_running = false;
             st.is_active = false;
+            st.next_run_at = None;
         }
     }
     Ok(())
