@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { sendNotification } from "@tauri-apps/plugin-notification";
-import { Plus, X, AlertTriangle, Power } from "lucide-react";
+import { Plus, X, Power } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 import { CommandForm } from "./components/CommandForm";
 import { CommandList } from "./components/CommandList";
+import { AutostartBanner } from "./components/AutostartBanner";
+import { QuitModal } from "./components/QuitModal";
 
 export function CommandListPage() {
     const [commands, setCommands] = useState<RegisteredCommand[]>([]);
@@ -107,87 +108,15 @@ export function CommandListPage() {
             </header>
 
             {showAutostartBanner && (
-                <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm animate-in slide-in-from-top-4 z-0 relative">
-                    <div className="flex items-center gap-3 text-amber-200/90 text-center md:text-left mx-auto md:mx-0">
-                        <span className="bg-amber-500/20 p-1.5 rounded-full flex-shrink-0"><AlertTriangle className="w-5 h-5 text-amber-400" /></span>
-                        <div>
-                            <p className="font-semibold text-amber-300">Auto-Start is disabled</p>
-                            <p className="text-amber-200/70 text-xs">Some commands require the app to start automatically, but this app is not configured to.</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap justify-center items-center gap-2">
-                        <button onClick={() => setShowAutostartBanner(false)} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors">
-                            Close
-                        </button>
-                        <button onClick={() => {
-                            localStorage.setItem("hideAutostartBanner", "true");
-                            setShowAutostartBanner(false);
-                        }} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors whitespace-nowrap">
-                            Don't show again
-                        </button>
-                        <button onClick={async () => {
-                            try {
-                                await enable();
-                                setShowAutostartBanner(false);
-                                sendNotification({ title: "Setup Success", body: "Auto-start has been enabled for Command Kosh." });
-                            } catch (e: any) {
-                                console.error("Failed to enable autostart", e);
-                                sendNotification({ title: "Setup Failed", body: "Could not enable auto-start." });
-                            }
-                        }} className="px-5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-medium rounded transition-all whitespace-nowrap shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                            Enable Auto Start
-                        </button>
-                    </div>
-                </div>
+                <AutostartBanner onClose={() => setShowAutostartBanner(false)} />
             )}
 
             {showQuitModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6">
-                            <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-100">
-                                <span className="bg-red-500/20 p-1.5 rounded-full flex-shrink-0">
-                                    <Power className="w-5 h-5 text-red-500" />
-                                </span>
-                                Quit App?
-                            </h2>
-                            <p className="text-sm text-zinc-400 mt-3 leading-relaxed">
-                                Are you sure you want to quit? This will <strong className="text-zinc-200 font-medium">terminate all running jobs</strong> immediately.
-                            </p>
-
-                            <label className="flex items-center gap-2 mt-5 text-sm text-zinc-300 cursor-pointer w-fit group selection:bg-transparent">
-                                <input
-                                    type="checkbox"
-                                    className="rounded border-zinc-700 bg-zinc-800 text-red-500 focus:ring-red-500/50 focus:ring-offset-zinc-900 w-4 h-4 transition-colors cursor-pointer accent-red-500"
-                                    checked={dontAskQuit}
-                                    onChange={(e) => setDontAskQuit(e.target.checked)}
-                                />
-                                <span className="group-hover:text-zinc-100 transition-colors">Don't ask me again</span>
-                            </label>
-                        </div>
-
-                        <div className="flex bg-zinc-950/50 p-4 border-t border-zinc-800/80 justify-end gap-3 rounded-b-xl">
-                            <button
-                                onClick={() => setShowQuitModal(false)}
-                                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-800/50 hover:bg-zinc-700/80 rounded-lg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    if (dontAskQuit) {
-                                        localStorage.setItem("hideQuitConfirm", "true");
-                                    }
-                                    await invoke("quit_app");
-                                }}
-                                className="px-5 py-2 text-sm font-medium text-white bg-red-500/90 hover:bg-red-500 rounded-lg transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2"
-                            >
-                                <Power className="w-4 h-4" />
-                                Quit
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <QuitModal
+                    onClose={() => setShowQuitModal(false)}
+                    dontAskQuit={dontAskQuit}
+                    setDontAskQuit={setDontAskQuit}
+                />
             )}
 
             <main className="flex-1 p-6 z-0 relative">

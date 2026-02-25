@@ -5,15 +5,7 @@ import { Check, TerminalSquare, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
-function formatTimeRemaining(seconds: number) {
-    if (seconds <= 0) return "soon...";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-}
+import { formatTimeRemaining } from "../../utils/time";
 
 export function CommandDetailsPage() {
     // Get command id from route params using the Route's context later
