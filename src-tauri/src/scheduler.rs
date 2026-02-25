@@ -94,6 +94,14 @@ pub fn spawn_command_task(
                 let mut retry_immediately = false;
 
                 if let Ok(mut child) = command_builder.spawn() {
+                    let pid = child.id();
+                    {
+                        let mut st = states_ref.lock().await;
+                        if let Some(s) = st.get_mut(&cmd_id) {
+                            s.child_pid = pid;
+                        }
+                    }
+
                     if let Some(stdout) = child.stdout.take() {
                         let mut reader = tokio::io::BufReader::new(stdout).lines();
                         let s_ref = Arc::clone(&states_ref);
@@ -181,6 +189,7 @@ pub fn spawn_command_task(
                 {
                     if let Some(st) = states_ref.lock().await.get_mut(&cmd_id) {
                         st.is_running = false;
+                        st.child_pid = None;
                     }
                 }
                 app_handle.emit("command-finished", &cmd_id).ok();
@@ -224,4 +233,21 @@ pub fn spawn_command_task(
     tauri::async_runtime::spawn(async move {
         handles_clone.lock().await.insert(id_clone, handle);
     });
+}
+
+pub fn kill_process_tree(pid: u32) {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("taskkill")
+            .args(["/F", "/T", "/PID", &pid.to_string()])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn();
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = std::process::Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .spawn();
+    }
 }

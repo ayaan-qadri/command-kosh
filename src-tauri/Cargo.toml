@@ -25,4 +25,5 @@ tokio = { version = "1.49.0", features = ["rt", "time", "macros", "sync", "proce
 uuid = { version = "1.21.0", features = ["v4", "serde"] }
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-notification = "2.3.3"
+tauri-plugin-single-instance = "2.4.0"
 

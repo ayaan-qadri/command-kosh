@@ -20,6 +20,9 @@ use commands::*;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_window(app);
+        }))
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
         .setup(|app| {
             // --- System Tray Setup ---
@@ -46,6 +49,13 @@ pub fn run() {
                         let app_handle = app.clone();
                         tauri::async_runtime::spawn(async move {
                             if let Some(state) = app_handle.try_state::<AppState>() {
+                                let pids: Vec<u32> = {
+                                    let states = state.execution_states.lock().await;
+                                    states.values().filter_map(|s| s.child_pid).collect()
+                                };
+                                for pid in pids {
+                                    crate::scheduler::kill_process_tree(pid);
+                                }
                                 let mut handles = state.task_handles.lock().await;
                                 for (_, handle) in handles.drain() {
                                     handle.abort();

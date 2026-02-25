@@ -78,6 +78,18 @@ pub async fn get_all_command_states(state: tauri::State<'_, AppState>) -> Result
 
 #[tauri::command]
 pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let pid_to_kill = {
+        let states = state.execution_states.lock().await;
+        if let Some(st) = states.get(&id) {
+            st.child_pid
+        } else {
+            None
+        }
+    };
+    if let Some(pid) = pid_to_kill {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
@@ -98,6 +110,18 @@ pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_h
 
 #[tauri::command]
 pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let pid_to_kill = {
+        let states = state.execution_states.lock().await;
+        if let Some(st) = states.get(&id) {
+            st.child_pid
+        } else {
+            None
+        }
+    };
+    if let Some(pid) = pid_to_kill {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
@@ -117,6 +141,7 @@ pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_han
             st.is_running = false;
             st.is_active = false;
             st.next_run_at = None;
+            st.child_pid = None;
         }
     }
     Ok(())
@@ -184,6 +209,18 @@ pub async fn edit_command(
         }
         save_commands(&app_handle, &cmds);
     }
+    let pid_to_kill = {
+        let states = state.execution_states.lock().await;
+        if let Some(st) = states.get(&id) {
+            st.child_pid
+        } else {
+            None
+        }
+    };
+    if let Some(pid) = pid_to_kill {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
@@ -206,6 +243,14 @@ pub async fn edit_command(
 
 #[tauri::command]
 pub async fn quit_app(state: tauri::State<'_, AppState>, _app_handle: tauri::AppHandle) -> Result<(), String> {
+    let pids: Vec<u32> = {
+        let states = state.execution_states.lock().await;
+        states.values().filter_map(|s| s.child_pid).collect()
+    };
+    for pid in pids {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     {
         let mut handles = state.task_handles.lock().await;
         for (_, handle) in handles.drain() {
