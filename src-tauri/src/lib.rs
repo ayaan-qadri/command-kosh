@@ -35,19 +35,25 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
-                        }
+                        show_window(app);
                     }
                     "hide" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.hide();
+                            let _ = window.close();
                         }
                     }
                     "quit" => {
-                        app.exit(0);
+                        let app_handle = app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            if let Some(state) = app_handle.try_state::<AppState>() {
+                                let mut handles = state.task_handles.lock().await;
+                                for (_, handle) in handles.drain() {
+                                    handle.abort();
+                                }
+                            }
+                            tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+                            std::process::exit(0);
+                        });
                     }
                     _ => {}
                 })
@@ -60,12 +66,12 @@ pub fn run() {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             if window.is_visible().unwrap_or(false) {
-                                let _ = window.hide();
+                                let _ = window.close();
                             } else {
-                                let _ = window.show();
-                                let _ = window.unminimize();
-                                let _ = window.set_focus();
+                                show_window(app);
                             }
+                        } else {
+                            show_window(app);
                         }
                     }
                     _ => {}
@@ -77,19 +83,11 @@ pub fn run() {
             let args: Vec<String> = std::env::args().collect();
             let is_hidden = args.iter().any(|arg| arg == "--hidden");
 
-            if let Some(window) = app.get_webview_window("main") {
-                if !is_hidden {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-
-                let window_clone = window.clone();
-                window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = window_clone.hide();
-                    }
-                });
+            if !is_hidden {
+                show_window(app.handle());
+            } else if let Some(window) = app.get_webview_window("main") {
+                // If it is hidden but the builder created the main window (because of tauri.conf.json)
+                let _ = window.close();
             }
 
             // --- Load commands from store ---
@@ -136,6 +134,31 @@ pub fn run() {
             edit_command,
             quit_app
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                // Prevent app completely exiting when all windows are closed,
+                // so it keeps running in the system tray and scheduling tasks.
+                api.prevent_exit();
+            }
+        });
+}
+
+fn show_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    } else {
+        let _ = tauri::WebviewWindowBuilder::new(
+            app,
+            "main",
+            tauri::WebviewUrl::App("index.html".into())
+        )
+        .title("Command Kosh")
+        .inner_size(800.0, 600.0)
+        .center()
+        .build();
+    }
 }

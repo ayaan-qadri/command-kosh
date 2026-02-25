@@ -205,7 +205,14 @@ pub async fn edit_command(
 }
 
 #[tauri::command]
-pub async fn quit_app(app_handle: tauri::AppHandle) -> Result<(), String> {
-    app_handle.exit(0);
-    Ok(())
+pub async fn quit_app(state: tauri::State<'_, AppState>, _app_handle: tauri::AppHandle) -> Result<(), String> {
+    {
+        let mut handles = state.task_handles.lock().await;
+        for (_, handle) in handles.drain() {
+            handle.abort();
+        }
+    }
+    // Give some time for children to be killed (kill_on_drop to execute)
+    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+    std::process::exit(0);
 }
