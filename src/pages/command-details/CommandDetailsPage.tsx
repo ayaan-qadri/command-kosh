@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Check, TerminalSquare, ArrowLeft } from "lucide-react";
+import { Check, TerminalSquare, ArrowLeft, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
@@ -66,26 +66,42 @@ export function CommandDetailsPage() {
                 const state = await invoke<CommandExecutionState>("get_command_state", {
                     id: commandId,
                 });
-                if (isMounted) setDetailsState(state);
+
+                // Only update polling state if logs length changed significantly or state changed 
+                // to avoid conflicting with the event listener which is more real-time
+                if (isMounted) {
+                    setDetailsState(prev => {
+                        // If we have newer logs from event listener, don't overwrite with old polling data
+                        if (prev.logs.length > state.logs.length) {
+                            return { ...state, logs: prev.logs };
+                        }
+                        return state;
+                    });
+                }
             } catch (e) {
                 console.error("Failed to fetch command state:", e);
             }
         };
         fetchState();
 
-        let unlistenOutput: (() => void) | undefined;
-        let unlistenStarted: (() => void) | undefined;
-        let unlistenFinished: (() => void) | undefined;
+        let unlistens: (() => void)[] = [];
+        let isCancelled = false;
 
         const setupListeners = async () => {
             try {
-                const unlistens = await Promise.all([
+                const newUnlistens = await Promise.all([
                     listen<[string, string]>("command-output", (event) => {
                         if (event.payload[0] === commandId) {
-                            setDetailsState((prev) => ({
-                                ...prev,
-                                logs: [...prev.logs, event.payload[1]].slice(-1000),
-                            }));
+                            setDetailsState((prev) => {
+                                const newLog = event.payload[1];
+                                if (prev.logs.length > 0 && prev.logs[prev.logs.length - 1] === newLog) {
+                                    return prev;
+                                }
+                                return {
+                                    ...prev,
+                                    logs: [...prev.logs, newLog].slice(-1000),
+                                };
+                            });
                         }
                     }),
                     listen<string>("command-started", (event) => {
@@ -97,9 +113,12 @@ export function CommandDetailsPage() {
                             setDetailsState((prev) => ({ ...prev, is_running: false }));
                     }),
                 ]);
-                unlistenOutput = unlistens[0];
-                unlistenStarted = unlistens[1];
-                unlistenFinished = unlistens[2];
+
+                if (isCancelled) {
+                    newUnlistens.forEach(u => u());
+                } else {
+                    unlistens = newUnlistens;
+                }
             } catch (e) {
                 console.error("Failed to setup listeners:", e);
             }
@@ -111,11 +130,10 @@ export function CommandDetailsPage() {
 
         return () => {
             isMounted = false;
+            isCancelled = true;
             clearInterval(interval);
             clearInterval(secInterval);
-            if (unlistenOutput) unlistenOutput();
-            if (unlistenStarted) unlistenStarted();
-            if (unlistenFinished) unlistenFinished();
+            unlistens.forEach(u => u());
         };
     }, [commandId]);
 
@@ -124,6 +142,15 @@ export function CommandDetailsPage() {
             logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }
     }, [detailsState.logs]);
+
+    const handleClearLogs = async () => {
+        try {
+            await invoke("clear_logs", { id: commandId });
+            setDetailsState((prev) => ({ ...prev, logs: [] }));
+        } catch (e) {
+            console.error("Failed to clear logs:", e);
+        }
+    };
 
     const handleStop = async () => {
         try {
@@ -263,6 +290,13 @@ export function CommandDetailsPage() {
                                 : "STOPPED"}
                     </div>
 
+                    <button
+                        onClick={handleClearLogs}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm transition font-medium flex items-center gap-1.5"
+                        title="Clear logs"
+                    >
+                        <Trash2 className="w-4 h-4" /> Clear
+                    </button>
                     <button
                         onClick={startEdit}
                         className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm transition font-medium"

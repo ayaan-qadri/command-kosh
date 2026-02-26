@@ -261,3 +261,12 @@ pub async fn quit_app(state: tauri::State<'_, AppState>, _app_handle: tauri::App
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
     std::process::exit(0);
 }
+
+#[tauri::command]
+pub async fn clear_logs(id: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let mut states = state.execution_states.lock().await;
+    if let Some(st) = states.get_mut(&id) {
+        st.logs.clear();
+    }
+    Ok(())
+}
