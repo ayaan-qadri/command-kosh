@@ -232,14 +232,14 @@ export function CommandDetailsPage() {
                         </div>
 
                         {/* Log body */}
-                        <div className="flex-1 bg-zinc-950 border border-zinc-800/70 rounded-xl overflow-y-auto p-4 font-mono text-sm min-h-0 relative">
+                        <div className="flex-1 bg-zinc-950 border border-zinc-800/70 rounded-xl overflow-y-auto overflow-x-hidden p-4 font-mono text-sm min-h-0 relative">
                             {detailsState.logs.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center gap-3 text-zinc-500">
                                     <Terminal className="w-8 h-8 opacity-30" />
                                     <span className="text-sm italic">No output yet. Start the command to see logs here.</span>
                                 </div>
                             ) : (
-                                <div className="space-y-0.5 text-zinc-300 whitespace-pre-wrap">
+                                <div className="space-y-0.5 text-zinc-300 whitespace-pre-wrap break-all">
                                     {detailsState.logs.map((log, idx) => (
                                         <div key={idx} className="hover:bg-zinc-800/40 px-1 py-0.5 rounded">
                                             {log}
