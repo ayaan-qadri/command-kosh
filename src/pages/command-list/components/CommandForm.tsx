@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { TerminalSquare, Clock, Calendar, MousePointerClick, RotateCcw, Bell, Zap, RefreshCw } from "lucide-react";
+import { TerminalSquare, Clock, Calendar, MousePointerClick, Zap } from "lucide-react";
 import { useForm, SubmitHandler } from "react-hook-form";
 
 const input = "w-full bg-zinc-950/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-zinc-100 text-sm focus:outline-none focus:border-teal-500/60 focus:bg-zinc-950 transition-colors placeholder:text-zinc-600";
@@ -154,8 +154,8 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                             <label
                                 key={opt.value}
                                 className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border cursor-pointer transition-all duration-150 ${scheduleType === opt.value
-                                        ? "border-teal-500/40 bg-teal-500/8 text-teal-300"
-                                        : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400"
+                                    ? "border-teal-500/40 bg-teal-500/8 text-teal-300"
+                                    : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400"
                                     }`}
                             >
                                 <input type="radio" value={opt.value} className="sr-only" {...register("scheduleType")} />
