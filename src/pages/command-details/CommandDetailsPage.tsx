@@ -129,7 +129,7 @@ export function CommandDetailsPage() {
             <header className="px-5 py-3.5 border-b border-zinc-800/80 flex items-center gap-3 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10">
                 <button
                     onClick={() => navigate({ to: "/" })}
-                    className="flex items-center gap-1.5 text-zinc-300 hover:text-zinc-100 transition-colors bg-zinc-800/50 hover:bg-zinc-800 px-2.5 py-1.5 rounded-md text-sm font-medium shrink-0"
+                    className="flex items-center gap-1.5 text-zinc-100 hover:text-zinc-300 transition-colors bg-zinc-800 hover:bg-zinc-800/50 px-2.5 py-1.5 rounded-md text-sm font-medium shrink-0"
                 >
                     <ArrowLeft className="w-3.5 h-3.5" /> Back
                 </button>
@@ -157,12 +157,12 @@ export function CommandDetailsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                    <button
+                    {!isEditing && <button
                         onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 bg-zinc-800/50 hover:bg-zinc-800 hover:text-zinc-200 border border-zinc-700/50 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-200 bg-zinc-800 hover:bg-zinc-800/50 hover:text-zinc-400 border border-zinc-700/50 transition-all"
                     >
                         <Pencil className="w-3.5 h-3.5" /> Edit
-                    </button>
+                    </button>}
 
                     {detailsState.is_active ? (
                         <button

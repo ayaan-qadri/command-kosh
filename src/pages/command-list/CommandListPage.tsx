@@ -29,7 +29,7 @@ export function CommandListPage() {
                     <button
                         onClick={() => setShowForm(!showForm)}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border ${showForm
-                            ? "text-zinc-400 bg-zinc-800/60 border-zinc-700/60 hover:bg-zinc-800 hover:text-zinc-200"
+                            ? "text-zinc-200 bg-zinc-800 border-zinc-700/60 hover:bg-zinc-800/60 hover:text-zinc-400"
                             : "text-teal-400 bg-teal-500/10 border-teal-500/30 hover:bg-teal-500/15 hover:border-teal-500/50"
                             }`}
                     >

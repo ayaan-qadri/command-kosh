@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 interface DeleteCommandModalProps {
     commandName: string;
@@ -17,7 +17,7 @@ export function DeleteCommandModal({ commandName, onDelete }: DeleteCommandModal
                 onClick={() => setOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-red-500/80 bg-red-500/5 hover:bg-red-500/12 border border-red-500/20 hover:border-red-500/40 transition-all"
             >
-                <AlertTriangle className="w-3.5 h-3.5" /> Delete
+                <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
 
             {/* Modal */}

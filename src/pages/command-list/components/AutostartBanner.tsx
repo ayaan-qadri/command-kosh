@@ -17,13 +17,13 @@ export function AutostartBanner({ onClose }: AutostartBannerProps) {
                 </div>
             </div>
             <div className="flex flex-wrap justify-center items-center gap-2">
-                <button onClick={onClose} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors">
+                <button onClick={onClose} className="px-3 py-1.5 text-zinc-200 hover:text-zinc-400 hover:bg-zinc-800 rounded transition-colors">
                     Close
                 </button>
                 <button onClick={() => {
                     localStorage.setItem("hideAutostartBanner", "true");
                     onClose();
-                }} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors whitespace-nowrap">
+                }} className="px-3 py-1.5 text-zinc-200 hover:text-zinc-400 hover:bg-zinc-800 rounded transition-colors whitespace-nowrap">
                     Don't show again
                 </button>
                 <button onClick={() => {

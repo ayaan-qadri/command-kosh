@@ -27,7 +27,7 @@ export function QuitModal() {
             <div className="group relative">
                 <button
                     onClick={handleTrigger}
-                    className="flex items-center justify-center w-8 h-8 rounded-md text-zinc-500 hover:text-red-400 bg-zinc-800/50 hover:bg-red-500/10 border border-zinc-700/50 hover:border-red-500/30 transition-all"
+                    className="flex items-center justify-center w-8 h-8 rounded-md text-red-400 hover:text-red-400 bg-red-500/10 hover:bg-red-500/5 border border-red-500/50 hover:border-red-500/30 transition-all"
                     title="Quit App"
                 >
                     <Power className="w-3.5 h-3.5" />

@@ -70,7 +70,7 @@ export function CommandLogs({ commandId }: CommandLogsProps) {
                 {logs.length > 0 && (
                     <button
                         onClick={handleClearLogs}
-                        className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/40 px-2.5 py-1 rounded-md transition-all"
+                        className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 bg-zinc-800 hover:bg-zinc-800/50 border border-zinc-700/40 px-2.5 py-1 rounded-md transition-all"
                     >
                         <Trash2 className="w-3 h-3" /> Clear
                     </button>
