@@ -68,12 +68,19 @@ export function CommandListPage() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
-            <header className="px-6 py-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md sticky top-0 z-10 w-full">
-                <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">Command Kosh</h1>
-                    <p className="text-xs text-zinc-400 mt-1">Registry & Scheduler</p>
-                </div>
+            <header className="px-5 py-3.5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10 w-full">
+                {/* Branding */}
                 <div className="flex items-center gap-3">
+
+                    <div>
+                        <h1 className="text-base font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent leading-tight">Command Kosh</h1>
+                        <p className="text-xs text-zinc-500 leading-tight">Registry & Scheduler</p>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                    {/* Quit — icon only with tooltip */}
                     <div className="group relative">
                         <button
                             onClick={async () => {
@@ -83,24 +90,29 @@ export function CommandListPage() {
                                     setShowQuitModal(true);
                                 }
                             }}
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 hover:border-red-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] text-sm flex items-center gap-2"
+                            className="flex items-center justify-center w-8 h-8 rounded-md text-zinc-500 hover:text-red-400 bg-zinc-800/50 hover:bg-red-500/10 border border-zinc-700/50 hover:border-red-500/30 transition-all"
+                            title="Quit App"
                         >
-                            <Power className="w-4 h-4" />
-                            <span>Quit App</span>
+                            <Power className="w-3.5 h-3.5" />
                         </button>
 
                         {/* Tooltip */}
-                        <div className="absolute top-full mt-2 right-0 w-64 bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 p-3 leading-relaxed">
-                            <div className="absolute -top-1.5 right-6 w-3 h-3 bg-zinc-900 border-l border-t border-zinc-700 transform rotate-45"></div>
-                            <strong className="block text-zinc-100 mb-1">Why quit the app?</strong>
-                            Closing the window only hides the app to the system tray so your commands can keep running in the background. Use this button to completely terminate the application and absolutely stop all scheduled jobs right now.
+                        <div className="absolute top-full mt-2 right-0 w-64 bg-zinc-900 border border-zinc-700/80 text-zinc-300 text-xs rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 p-3 leading-relaxed">
+                            <div className="absolute -top-1.5 right-3 w-3 h-3 bg-zinc-900 border-l border-t border-zinc-700/80 transform rotate-45" />
+                            <strong className="block text-zinc-100 mb-1 text-xs">Why quit the app?</strong>
+                            Closing the window only hides it to the system tray so commands keep running. Use this to fully terminate the app and stop all scheduled jobs.
                         </div>
                     </div>
+
+                    {/* New Command */}
                     <button
                         onClick={() => setShowForm(!showForm)}
-                        className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-4 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] text-sm flex items-center gap-2"
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border ${showForm
+                            ? "text-zinc-400 bg-zinc-800/60 border-zinc-700/60 hover:bg-zinc-800 hover:text-zinc-200"
+                            : "text-teal-400 bg-teal-500/10 border-teal-500/30 hover:bg-teal-500/15 hover:border-teal-500/50"
+                            }`}
                     >
-                        {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                        {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                         <span>{showForm ? "Cancel" : "New Command"}</span>
                     </button>
                 </div>
@@ -129,27 +141,36 @@ export function CommandListPage() {
                         />
                     )}
 
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-medium text-zinc-200">Registered Commands</h2>
-                        <CommandList
-                            commands={commands}
-                            states={commandStates}
-                            showForm={showForm}
-                            onSelect={(cmd) => {
-                                navigate({ to: `/command-details/${cmd.id}` });
-                            }}
-                            onStart={async (id, e) => {
-                                e.stopPropagation();
-                                await invoke("start_command", { id });
-                                fetchStates();
-                            }}
-                            onStop={async (id, e) => {
-                                e.stopPropagation();
-                                await invoke("stop_command", { id });
-                                fetchStates();
-                            }}
-                        />
-                    </div>
+                    {!showForm && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-base font-semibold text-zinc-300 uppercase tracking-wider">Registered Commands</h2>
+                                {commands.length > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                        {commands.length}
+                                    </span>
+                                )}
+                            </div>
+                            <CommandList
+                                commands={commands}
+                                states={commandStates}
+                                showForm={showForm}
+                                onSelect={(cmd) => {
+                                    navigate({ to: `/command-details/${cmd.id}` });
+                                }}
+                                onStart={async (id, e) => {
+                                    e.stopPropagation();
+                                    await invoke("start_command", { id });
+                                    fetchStates();
+                                }}
+                                onStop={async (id, e) => {
+                                    e.stopPropagation();
+                                    await invoke("stop_command", { id });
+                                    fetchStates();
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
