@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Check, TerminalSquare, ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
 import { formatTimeRemaining } from "../../utils/time";
+import { CommandEditForm } from "./components/CommandEditForm";
 
 export function CommandDetailsPage() {
     // Get command id from route params using the Route's context later
@@ -26,17 +27,6 @@ export function CommandDetailsPage() {
 
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
-    const [editName, setEditName] = useState("");
-    const [editCommandStr, setEditCommandStr] = useState("");
-    const [editScheduleType, setEditScheduleType] = useState<"manual" | "interval" | "datetime">("interval");
-    const [editIntervalSecs, setEditIntervalSecs] = useState("");
-    const [editDatetime, setEditDatetime] = useState("");
-    const [editAutoStart, setEditAutoStart] = useState(true);
-    const [editNotifyOnFailure, setEditNotifyOnFailure] = useState(false);
-    const [editNotifyOnSuccess, setEditNotifyOnSuccess] = useState(false);
-    const [editAutoRestartOnFail, setEditAutoRestartOnFail] = useState(false);
-    const [editAutoRestartRetries, setEditAutoRestartRetries] = useState("3");
-    const [editAutoRunOnComplete, setEditAutoRunOnComplete] = useState(false);
 
     const fetchCommands = async () => {
         try {
@@ -182,63 +172,6 @@ export function CommandDetailsPage() {
     const startEdit = () => {
         if (!selectedCommand) return;
         setIsEditing(true);
-        setEditName(selectedCommand.name);
-        setEditCommandStr(selectedCommand.command_str);
-        setEditAutoStart(selectedCommand.auto_start ?? false);
-        setEditNotifyOnFailure(selectedCommand.notify_on_failure ?? false);
-        setEditNotifyOnSuccess(selectedCommand.notify_on_success ?? false);
-        setEditAutoRestartOnFail(selectedCommand.auto_restart_on_fail ?? false);
-        setEditAutoRestartRetries((selectedCommand.auto_restart_retries ?? 3).toString());
-        setEditAutoRunOnComplete(selectedCommand.auto_run_on_complete ?? false);
-
-        if (selectedCommand.run_at_secs) {
-            setEditScheduleType("datetime");
-            const dt = new Date(selectedCommand.run_at_secs * 1000);
-            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
-            setEditDatetime(dt.toISOString().slice(0, 16));
-            setEditIntervalSecs("60");
-        } else if (selectedCommand.interval_secs > 0) {
-            setEditScheduleType("interval");
-            setEditIntervalSecs(selectedCommand.interval_secs.toString());
-            setEditDatetime("");
-        } else {
-            setEditScheduleType("manual");
-            setEditIntervalSecs("60");
-            setEditDatetime("");
-        }
-    };
-
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            let interval = 0;
-            let runAt: number | null = null;
-            if (editScheduleType === "interval") {
-                interval = parseInt(editIntervalSecs) || 0;
-            } else if (editScheduleType === "datetime") {
-                if (editDatetime) {
-                    runAt = Math.floor(new Date(editDatetime).getTime() / 1000);
-                }
-            }
-
-            await invoke("edit_command", {
-                id: commandId,
-                name: editName,
-                commandStr: editCommandStr,
-                intervalSecs: interval,
-                runAtSecs: runAt,
-                autoStart: editAutoStart,
-                notifyOnFailure: editNotifyOnFailure,
-                notifyOnSuccess: editNotifyOnSuccess,
-                autoRestartOnFail: editAutoRestartOnFail,
-                autoRestartRetries: parseInt(editAutoRestartRetries) || 0,
-                autoRunOnComplete: editAutoRunOnComplete,
-            });
-            await fetchCommands();
-            setIsEditing(false);
-        } catch (e) {
-            console.error("Failed to edit command:", e);
-        }
     };
 
     if (isLoading || !selectedCommand) {
@@ -333,177 +266,14 @@ export function CommandDetailsPage() {
             </header>
             <main className="flex-1 p-6 flex flex-col h-[calc(100vh-80px)] overflow-hidden">
                 {isEditing ? (
-                    <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-xl max-w-2xl mx-auto w-full">
-                        <h2 className="text-lg font-bold mb-4">Edit Command</h2>
-                        <form onSubmit={handleEditSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-zinc-400 mb-1">
-                                    Name / Identifier
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-zinc-400 mb-1">
-                                    Command String (OS Executable)
-                                </label>
-                                <textarea
-                                    required
-                                    value={editCommandStr}
-                                    onChange={(e) => setEditCommandStr(e.target.value)}
-                                    rows={3}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 font-mono text-sm resize-y"
-                                />
-                            </div>
-                            <div>
-                                <div>
-                                    <div>
-                                        <label className="block text-sm text-zinc-400 mb-1">Schedule Type</label>
-                                        <select
-                                            value={editScheduleType}
-                                            onChange={(e) => setEditScheduleType(e.target.value as any)}
-                                            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500 mb-4"
-                                        >
-                                            <option value="manual">Run Once Immediately</option>
-                                            <option value="interval">Recurring Interval</option>
-                                            <option value="datetime">Specific Date and Time</option>
-                                        </select>
-                                    </div>
-
-                                    {editScheduleType === "interval" && (
-                                        <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Interval in Seconds</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                required
-                                                value={editIntervalSecs}
-                                                onChange={(e) => setEditIntervalSecs(e.target.value)}
-                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {editScheduleType === "datetime" && (
-                                        <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Target Date and Time</label>
-                                            <input
-                                                type="datetime-local"
-                                                required
-                                                value={editDatetime}
-                                                onChange={(e) => setEditDatetime(e.target.value)}
-                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:outline-none focus:border-teal-500"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={editAutoStart}
-                                            onChange={(e) => setEditAutoStart(e.target.checked)}
-                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
-                                        />
-                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
-                                    </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Start automatically on application launch</span>
-                                </label>
-                            </div>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={editNotifyOnFailure}
-                                            onChange={(e) => setEditNotifyOnFailure(e.target.checked)}
-                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-red-500 checked:border-red-500 transition-colors cursor-pointer"
-                                        />
-                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
-                                    </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on failure</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={editNotifyOnSuccess}
-                                            onChange={(e) => setEditNotifyOnSuccess(e.target.checked)}
-                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-teal-500 checked:border-teal-500 transition-colors cursor-pointer"
-                                        />
-                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
-                                    </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Notify on success</span>
-                                </label>
-                            </div>
-
-                            <div className="flex flex-col gap-3 sm:flex-row sm:gap-6 pt-2">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={editAutoRestartOnFail}
-                                            onChange={(e) => setEditAutoRestartOnFail(e.target.checked)}
-                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-orange-500 checked:border-orange-500 transition-colors cursor-pointer"
-                                        />
-                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
-                                    </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run on failed</span>
-                                </label>
-
-                                {editAutoRestartOnFail && (
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-sm text-zinc-400">Retries:</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={editAutoRestartRetries}
-                                            onChange={(e) => setEditAutoRestartRetries(e.target.value)}
-                                            className="w-20 bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 text-zinc-100 focus:outline-none focus:border-teal-500 text-sm"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pt-2">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={editAutoRunOnComplete}
-                                            onChange={(e) => setEditAutoRunOnComplete(e.target.checked)}
-                                            className="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded bg-zinc-950 checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer"
-                                        />
-                                        <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-zinc-950 stroke-[3]" />
-                                    </div>
-                                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Auto re-run command when completed or stopped</span>
-                                </label>
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsEditing(false)}
-                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium px-6 py-2 rounded-md transition-colors flex-1"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/50 hover:border-teal-400 font-medium px-6 py-2 rounded-md transition-all shadow-[0_0_15px_rgba(26,188,156,0.15)] hover:shadow-[0_0_20px_rgba(26,188,156,0.25)] flex-1 flex justify-center items-center gap-2"
-                                >
-                                    <TerminalSquare className="w-5 h-5" /> <span>Save Changes</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    <CommandEditForm
+                        command={selectedCommand}
+                        onCancel={() => setIsEditing(false)}
+                        onSuccess={() => {
+                            fetchCommands();
+                            setIsEditing(false);
+                        }}
+                    />
                 ) : (
                     <div className="bg-zinc-950 border border-zinc-800 rounded-lg flex-1 overflow-y-auto p-4 font-mono text-sm shadow-inner relative">
                         {detailsState.logs.length === 0 ? (
