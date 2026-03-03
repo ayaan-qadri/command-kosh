@@ -1,5 +1,6 @@
 import { Clock, Play, Square, Zap, ChevronRight, Timer, CalendarClock } from "lucide-react";
 import { RegisteredCommand, CommandExecutionState } from "../../../types";
+import { CopyableCommand } from "../../../custom-components/CopyableCommand";
 
 interface CommandListProps {
     commands: RegisteredCommand[];
@@ -14,7 +15,7 @@ function getScheduleLabel(cmd: RegisteredCommand) {
     if (cmd.run_at_secs) {
         return {
             icon: <CalendarClock className="w-3 h-3" />,
-            label: `Runs at ${new Date(cmd.run_at_secs * 1000).toLocaleString()}`,
+            label: `Runs at ${new Date(cmd.run_at_secs * 1000).toLocaleString()} `,
         };
     }
     if (cmd.interval_secs > 0) {
@@ -23,12 +24,12 @@ function getScheduleLabel(cmd: RegisteredCommand) {
         const m = Math.floor((secs % 3600) / 60);
         const s = secs % 60;
         const parts: string[] = [];
-        if (h > 0) parts.push(`${h}h`);
-        if (m > 0) parts.push(`${m}m`);
-        if (s > 0) parts.push(`${s}s`);
+        if (h > 0) parts.push(`${h} h`);
+        if (m > 0) parts.push(`${m} m`);
+        if (s > 0) parts.push(`${s} s`);
         return {
             icon: <Timer className="w-3 h-3" />,
-            label: `Every ${parts.join(" ")}`,
+            label: `Every ${parts.join(" ")} `,
         };
     }
     return {
@@ -111,9 +112,10 @@ export function CommandList({ commands, states, showForm, onSelect, onStart, onS
 
                                 {/* Command string — inline fit */}
                                 <div className="mb-2.5">
-                                    <code className="text-[13px] text-teal-300/80 bg-zinc-800/70 border border-zinc-700/40 px-2.5 py-1 rounded-md font-mono inline-block max-w-full truncate align-middle">
-                                        {cmd.command_str}
-                                    </code>
+                                    <CopyableCommand
+                                        command={cmd.command_str}
+                                        className="text-[13px] text-teal-300/80 bg-zinc-800/70 border border-zinc-700/40 px-2.5 py-1 rounded-md font-mono"
+                                    />
                                 </div>
 
                                 {/* Schedule row */}

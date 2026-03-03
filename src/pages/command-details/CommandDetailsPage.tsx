@@ -8,6 +8,7 @@ import { RegisteredCommand, CommandExecutionState } from "../../types";
 import { formatTimeRemaining } from "../../utils/time";
 import { CommandEditForm } from "./components/CommandEditForm";
 import { DeleteCommandModal } from "./components/DeleteCommandModal";
+import { CopyableCommand } from "../../custom-components/CopyableCommand";
 
 function StatusPill({ state }: { state: CommandExecutionState }) {
     if (state.is_running) return (
@@ -151,7 +152,10 @@ export function CommandDetailsPage() {
 
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-semibold text-zinc-100 truncate leading-tight">{selectedCommand.name}</h1>
-                    <code className="text-[11px] text-zinc-400 font-mono truncate block">{selectedCommand.command_str}</code>
+                    <CopyableCommand
+                        command={selectedCommand.command_str}
+                        className="text-[11px] text-zinc-400 font-mono"
+                    />
                 </div>
 
                 {/* Next run countdown */}
