@@ -26,15 +26,16 @@ export function AutostartBanner({ onClose }: AutostartBannerProps) {
                 }} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors whitespace-nowrap">
                     Don't show again
                 </button>
-                <button onClick={async () => {
-                    try {
-                        await enable();
-                        onClose();
-                        sendNotification({ title: "Setup Success", body: "Auto-start has been enabled for Command Kosh." });
-                    } catch (e: any) {
-                        console.error("Failed to enable autostart", e);
-                        sendNotification({ title: "Setup Failed", body: "Could not enable auto-start." });
-                    }
+                <button onClick={() => {
+                    enable()
+                        .then(() => {
+                            onClose();
+                            sendNotification({ title: "Setup Success", body: "Auto-start has been enabled for Command Kosh." });
+                        })
+                        .catch((e: any) => {
+                            console.error("Failed to enable autostart", e);
+                            sendNotification({ title: "Setup Failed", body: "Could not enable auto-start." });
+                        });
                 }} className="px-5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-medium rounded transition-all whitespace-nowrap shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]">
                     Enable Auto Start
                 </button>

@@ -73,35 +73,34 @@ export function CommandEditForm({ command, onCancel, onSuccess }: CommandEditFor
     const scheduleType = watch("scheduleType");
     const autoRestartOnFail = watch("autoRestartOnFail");
 
-    const onSubmit: SubmitHandler<FormValues> = async (data) => {
-        try {
-            let interval = 0;
-            let runAt: number | null = null;
-            if (data.scheduleType === "interval") {
-                interval = parseInt(data.intervalSecs) || 0;
-            } else if (data.scheduleType === "datetime") {
-                if (data.datetime) {
-                    runAt = Math.floor(new Date(data.datetime).getTime() / 1000);
-                }
+    const onSubmit: SubmitHandler<FormValues> = (data) => {
+        let interval = 0;
+        let runAt: number | null = null;
+        if (data.scheduleType === "interval") {
+            interval = parseInt(data.intervalSecs) || 0;
+        } else if (data.scheduleType === "datetime") {
+            if (data.datetime) {
+                runAt = Math.floor(new Date(data.datetime).getTime() / 1000);
             }
-
-            await invoke("edit_command", {
-                id: command.id,
-                name: data.name,
-                commandStr: data.commandStr,
-                intervalSecs: interval,
-                runAtSecs: runAt,
-                autoStart: data.autoStart,
-                notifyOnFailure: data.notifyOnFailure,
-                notifyOnSuccess: data.notifyOnSuccess,
-                autoRestartOnFail: data.autoRestartOnFail,
-                autoRestartRetries: parseInt(data.autoRestartRetries) || 0,
-                autoRunOnComplete: data.autoRunOnComplete,
-            });
-            onSuccess();
-        } catch (e) {
-            console.error("Failed to edit command:", e);
         }
+
+        invoke("edit_command", {
+            id: command.id,
+            name: data.name,
+            commandStr: data.commandStr,
+            intervalSecs: interval,
+            runAtSecs: runAt,
+            autoStart: data.autoStart,
+            notifyOnFailure: data.notifyOnFailure,
+            notifyOnSuccess: data.notifyOnSuccess,
+            autoRestartOnFail: data.autoRestartOnFail,
+            autoRestartRetries: parseInt(data.autoRestartRetries) || 0,
+            autoRunOnComplete: data.autoRunOnComplete,
+        })
+            .then(() => onSuccess())
+            .catch((e) => {
+                console.error("Failed to edit command:", e);
+            });
     };
 
     return (

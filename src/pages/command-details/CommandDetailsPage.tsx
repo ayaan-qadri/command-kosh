@@ -28,21 +28,23 @@ export function CommandDetailsPage() {
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
 
-    const fetchCommands = async () => {
-        try {
-            const fetchedCommands = await invoke<RegisteredCommand[]>("get_commands");
-            const cmd = fetchedCommands.find((c) => c.id === commandId);
-            if (cmd) {
-                setSelectedCommand(cmd);
-            } else {
+    const fetchCommands = () => {
+        invoke<RegisteredCommand[]>("get_commands")
+            .then((fetchedCommands) => {
+                const cmd = fetchedCommands.find((c) => c.id === commandId);
+                if (cmd) {
+                    setSelectedCommand(cmd);
+                } else {
+                    navigate({ to: '/' });
+                }
+            })
+            .catch((e) => {
+                console.error("Failed to fetch commands:", e);
                 navigate({ to: '/' });
-            }
-        } catch (e) {
-            console.error("Failed to fetch commands:", e);
-            navigate({ to: '/' });
-        } finally {
-            setIsLoading(false);
-        }
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
     useEffect(() => {
@@ -50,13 +52,11 @@ export function CommandDetailsPage() {
 
         fetchCommands();
 
-        const fetchState = async () => {
+        const fetchState = () => {
             if (!commandId) return;
-            try {
-                const state = await invoke<CommandExecutionState>("get_command_state", {
-                    id: commandId,
-                });
-
+            invoke<CommandExecutionState>("get_command_state", {
+                id: commandId,
+            }).then((state) => {
                 // Only update polling state if logs length changed significantly or state changed 
                 // to avoid conflicting with the event listener which is more real-time
                 if (isMounted) {
@@ -68,50 +68,48 @@ export function CommandDetailsPage() {
                         return state;
                     });
                 }
-            } catch (e) {
+            }).catch((e) => {
                 console.error("Failed to fetch command state:", e);
-            }
+            });
         };
         fetchState();
 
         let unlistens: (() => void)[] = [];
         let isCancelled = false;
 
-        const setupListeners = async () => {
-            try {
-                const newUnlistens = await Promise.all([
-                    listen<[string, string]>("command-output", (event) => {
-                        if (event.payload[0] === commandId) {
-                            setDetailsState((prev) => {
-                                const newLog = event.payload[1];
-                                if (prev.logs.length > 0 && prev.logs[prev.logs.length - 1] === newLog) {
-                                    return prev;
-                                }
-                                return {
-                                    ...prev,
-                                    logs: [...prev.logs, newLog].slice(-1000),
-                                };
-                            });
-                        }
-                    }),
-                    listen<string>("command-started", (event) => {
-                        if (event.payload === commandId)
-                            setDetailsState((prev) => ({ ...prev, is_running: true }));
-                    }),
-                    listen<string>("command-finished", (event) => {
-                        if (event.payload === commandId)
-                            setDetailsState((prev) => ({ ...prev, is_running: false }));
-                    }),
-                ]);
-
+        const setupListeners = () => {
+            Promise.all([
+                listen<[string, string]>("command-output", (event) => {
+                    if (event.payload[0] === commandId) {
+                        setDetailsState((prev) => {
+                            const newLog = event.payload[1];
+                            if (prev.logs.length > 0 && prev.logs[prev.logs.length - 1] === newLog) {
+                                return prev;
+                            }
+                            return {
+                                ...prev,
+                                logs: [...prev.logs, newLog].slice(-1000),
+                            };
+                        });
+                    }
+                }),
+                listen<string>("command-started", (event) => {
+                    if (event.payload === commandId)
+                        setDetailsState((prev) => ({ ...prev, is_running: true }));
+                }),
+                listen<string>("command-finished", (event) => {
+                    if (event.payload === commandId)
+                        setDetailsState((prev) => ({ ...prev, is_running: false }));
+                }),
+            ]).then((newUnlistens) => {
                 if (isCancelled) {
                     newUnlistens.forEach(u => u());
                 } else {
                     unlistens = newUnlistens;
                 }
-            } catch (e) {
+            }).catch((e) => {
                 console.error("Failed to setup listeners:", e);
-            }
+            });
         };
         setupListeners();
 
@@ -133,40 +131,28 @@ export function CommandDetailsPage() {
         }
     }, [detailsState.logs]);
 
-    const handleClearLogs = async () => {
-        try {
-            await invoke("clear_logs", { id: commandId });
-            setDetailsState((prev) => ({ ...prev, logs: [] }));
-        } catch (e) {
-            console.error("Failed to clear logs:", e);
-        }
+    const handleClearLogs = () => {
+        invoke("clear_logs", { id: commandId })
+            .then(() => setDetailsState((prev) => ({ ...prev, logs: [] })))
+            .catch((e) => console.error("Failed to clear logs:", e));
     };
 
-    const handleStop = async () => {
-        try {
-            await invoke("stop_command", { id: commandId });
-            setDetailsState((prev) => ({ ...prev, is_running: false, is_active: false }));
-        } catch (e) {
-            console.error("Failed to stop command:", e);
-        }
+    const handleStop = () => {
+        invoke("stop_command", { id: commandId })
+            .then(() => setDetailsState((prev) => ({ ...prev, is_running: false, is_active: false })))
+            .catch((e) => console.error("Failed to stop command:", e));
     };
 
-    const handleStart = async () => {
-        try {
-            await invoke("start_command", { id: commandId });
-            setDetailsState((prev) => ({ ...prev, is_running: true, is_active: true }));
-        } catch (e) {
-            console.error("Failed to start command:", e);
-        }
+    const handleStart = () => {
+        invoke("start_command", { id: commandId })
+            .then(() => setDetailsState((prev) => ({ ...prev, is_running: true, is_active: true })))
+            .catch((e) => console.error("Failed to start command:", e));
     };
 
-    const handleDelete = async () => {
-        try {
-            await invoke("delete_command", { id: commandId });
-            navigate({ to: "/" });
-        } catch (e) {
-            console.error("Failed to delete command:", e);
-        }
+    const handleDelete = () => {
+        invoke("delete_command", { id: commandId })
+            .then(() => navigate({ to: "/" }))
+            .catch((e) => console.error("Failed to delete command:", e));
     };
 
     const startEdit = () => {

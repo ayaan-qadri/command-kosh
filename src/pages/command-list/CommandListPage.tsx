@@ -19,13 +19,10 @@ export function CommandListPage() {
     const [dontAskQuit, setDontAskQuit] = useState(false);
     const navigate = useNavigate();
 
-    const fetchStates = async () => {
-        try {
-            const states = await invoke<Record<string, CommandExecutionState>>("get_all_command_states");
-            setCommandStates(states);
-        } catch (e) {
-            console.error("Failed to fetch states:", e);
-        }
+    const fetchStates = () => {
+        invoke<Record<string, CommandExecutionState>>("get_all_command_states")
+            .then(states => setCommandStates(states))
+            .catch(e => console.error("Failed to fetch states:", e));
     };
 
     useEffect(() => {
@@ -35,36 +32,38 @@ export function CommandListPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const fetchCommands = async () => {
-        try {
-            const fetchedCommands = await invoke<RegisteredCommand[]>("get_commands");
-            setCommands(fetchedCommands);
+    const fetchCommands = () => {
+        invoke<RegisteredCommand[]>("get_commands")
+            .then(async (fetchedCommands) => {
+                setCommands(fetchedCommands);
 
-            try {
-                if (!import.meta.env.DEV) {
-                    const currentlyEnabled = await isEnabled();
-                    const shouldEnable = fetchedCommands.some(c => c.auto_start !== false);
+                try {
+                    if (!import.meta.env.DEV) {
+                        const currentlyEnabled = await isEnabled();
+                        const shouldEnable = fetchedCommands.some(c => c.auto_start !== false);
 
-                    if (shouldEnable && !currentlyEnabled) {
-                        try {
-                            await enable();
-                            console.log("Auto-start enabled successfully for Command Kosh.");
-                        } catch (enableErr: any) {
-                            console.error("Failed to auto-enable autostart:", enableErr);
-                            if (localStorage.getItem("hideAutostartBanner") !== "true") {
-                                setShowAutostartBanner(true);
-                            }
+                        if (shouldEnable && !currentlyEnabled) {
+                            enable()
+                                .then(() => {
+                                    console.log("Auto-start enabled successfully for Command Kosh.");
+                                })
+                                .catch((enableErr: any) => {
+                                    console.error("Failed to auto-enable autostart:", enableErr);
+                                    if (localStorage.getItem("hideAutostartBanner") !== "true") {
+                                        setShowAutostartBanner(true);
+                                    }
+                                });
+                        } else if (!shouldEnable && currentlyEnabled) {
+                            await disable();
                         }
-                    } else if (!shouldEnable && currentlyEnabled) {
-                        await disable();
                     }
+                } catch (err: any) {
+                    console.error("Failed to check OS autostart status:", err);
                 }
-            } catch (err: any) {
-                console.error("Failed to check OS autostart status:", err);
-            }
-        } catch (e) {
-            console.error("Failed to fetch commands:", e);
-        }
+            })
+            .catch(e => {
+                console.error("Failed to fetch commands:", e);
+            });
     };
 
     return (
