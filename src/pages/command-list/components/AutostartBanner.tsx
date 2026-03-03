@@ -13,7 +13,7 @@ export function AutostartBanner({ onClose }: AutostartBannerProps) {
                 <span className="bg-amber-500/20 p-1.5 rounded-full flex-shrink-0"><AlertTriangle className="w-5 h-5 text-amber-400" /></span>
                 <div>
                     <p className="font-semibold text-amber-300">Auto-Start is disabled</p>
-                    <p className="text-amber-200/70 text-xs">Some commands require the app to start automatically, but this app is not configured to.</p>
+                    <p className="text-amber-200/70 text-sm">Some commands require the app to start automatically, but this app is not configured to.</p>
                 </div>
             </div>
             <div className="flex flex-wrap justify-center items-center gap-2">

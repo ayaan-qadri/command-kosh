@@ -100,9 +100,6 @@ export function CommandList({ commands, states, showForm, onSelect, onStart, onS
                         )}
 
                         <div className="flex items-stretch">
-                            {/* Left state strip */}
-                            <div className={`w-[3px] shrink-0 ${isRunning ? "bg-emerald-500/70" : isActive ? "bg-blue-500/60" : "bg-zinc-700/40"}`} />
-
                             {/* Main content */}
                             <div className="flex-1 min-w-0 px-5 py-4">
                                 {/* Name row — title only */}

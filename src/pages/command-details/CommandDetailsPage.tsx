@@ -1,117 +1,91 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Play, Square, Pencil, AlertTriangle, Terminal } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
 import { formatTimeRemaining } from "../../utils/time";
 import { CommandEditForm } from "./components/CommandEditForm";
 
+function StatusPill({ state }: { state: CommandExecutionState }) {
+    if (state.is_running) return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> RUNNING
+        </span>
+    );
+    if (state.is_active) return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" style={{ animationDuration: "2.5s" }} /> SCHEDULED
+        </span>
+    );
+    return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-widest bg-zinc-800/60 text-zinc-500 border border-zinc-700/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" /> STOPPED
+        </span>
+    );
+}
+
 export function CommandDetailsPage() {
-    // Get command id from route params using the Route's context later
-    // but the Route is defined elsewhere, so we can use useParams
     const { commandId } = useParams({ strict: false });
     const navigate = useNavigate();
 
     const [selectedCommand, setSelectedCommand] = useState<RegisteredCommand | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-
-    const [detailsState, setDetailsState] = useState<CommandExecutionState>({
-        is_running: false,
-        is_active: false,
-        logs: [],
-    });
+    const [detailsState, setDetailsState] = useState<CommandExecutionState>({ is_running: false, is_active: false, logs: [] });
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const logsEndRef = useRef<HTMLDivElement>(null);
     const [now, setNow] = useState(Date.now() / 1000);
-
-    // Edit state
     const [isEditing, setIsEditing] = useState(false);
 
     const fetchCommands = () => {
         invoke<RegisteredCommand[]>("get_commands")
             .then((fetchedCommands) => {
                 const cmd = fetchedCommands.find((c) => c.id === commandId);
-                if (cmd) {
-                    setSelectedCommand(cmd);
-                } else {
-                    navigate({ to: '/' });
-                }
+                if (cmd) setSelectedCommand(cmd);
+                else navigate({ to: "/" });
             })
-            .catch((e) => {
-                console.error("Failed to fetch commands:", e);
-                navigate({ to: '/' });
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
+            .catch(() => navigate({ to: "/" }))
+            .finally(() => setIsLoading(false));
     };
 
     useEffect(() => {
         let isMounted = true;
-
         fetchCommands();
 
         const fetchState = () => {
             if (!commandId) return;
-            invoke<CommandExecutionState>("get_command_state", {
-                id: commandId,
-            }).then((state) => {
-                // Only update polling state if logs length changed significantly or state changed 
-                // to avoid conflicting with the event listener which is more real-time
+            invoke<CommandExecutionState>("get_command_state", { id: commandId }).then((state) => {
                 if (isMounted) {
-                    setDetailsState(prev => {
-                        // If we have newer logs from event listener, don't overwrite with old polling data
-                        if (prev.logs.length > state.logs.length) {
-                            return { ...state, logs: prev.logs };
-                        }
-                        return state;
-                    });
+                    setDetailsState(prev => prev.logs.length > state.logs.length ? { ...state, logs: prev.logs } : state);
                 }
-            }).catch((e) => {
-                console.error("Failed to fetch command state:", e);
-            });
+            }).catch(console.error);
         };
         fetchState();
 
         let unlistens: (() => void)[] = [];
         let isCancelled = false;
 
-        const setupListeners = () => {
-            Promise.all([
-                listen<[string, string]>("command-output", (event) => {
-                    if (event.payload[0] === commandId) {
-                        setDetailsState((prev) => {
-                            const newLog = event.payload[1];
-                            if (prev.logs.length > 0 && prev.logs[prev.logs.length - 1] === newLog) {
-                                return prev;
-                            }
-                            return {
-                                ...prev,
-                                logs: [...prev.logs, newLog].slice(-1000),
-                            };
-                        });
-                    }
-                }),
-                listen<string>("command-started", (event) => {
-                    if (event.payload === commandId)
-                        setDetailsState((prev) => ({ ...prev, is_running: true }));
-                }),
-                listen<string>("command-finished", (event) => {
-                    if (event.payload === commandId)
-                        setDetailsState((prev) => ({ ...prev, is_running: false }));
-                }),
-            ]).then((newUnlistens) => {
-                if (isCancelled) {
-                    newUnlistens.forEach(u => u());
-                } else {
-                    unlistens = newUnlistens;
+        Promise.all([
+            listen<[string, string]>("command-output", (event) => {
+                if (event.payload[0] === commandId) {
+                    setDetailsState((prev) => {
+                        const newLog = event.payload[1];
+                        if (prev.logs.length > 0 && prev.logs[prev.logs.length - 1] === newLog) return prev;
+                        return { ...prev, logs: [...prev.logs, newLog].slice(-1000) };
+                    });
                 }
-            }).catch((e) => {
-                console.error("Failed to setup listeners:", e);
-            });
-        };
-        setupListeners();
+            }),
+            listen<string>("command-started", (event) => {
+                if (event.payload === commandId) setDetailsState((prev) => ({ ...prev, is_running: true }));
+            }),
+            listen<string>("command-finished", (event) => {
+                if (event.payload === commandId) setDetailsState((prev) => ({ ...prev, is_running: false }));
+            }),
+        ]).then((newUnlistens) => {
+            if (isCancelled) newUnlistens.forEach(u => u());
+            else unlistens = newUnlistens;
+        }).catch(console.error);
 
         const interval = setInterval(fetchState, 2000);
         const secInterval = setInterval(() => setNow(Date.now() / 1000), 1000);
@@ -126,156 +100,178 @@ export function CommandDetailsPage() {
     }, [commandId]);
 
     useEffect(() => {
-        if (detailsState.logs.length > 0) {
-            logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
+        if (detailsState.logs.length > 0) logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [detailsState.logs]);
 
     const handleClearLogs = () => {
         invoke("clear_logs", { id: commandId })
             .then(() => setDetailsState((prev) => ({ ...prev, logs: [] })))
-            .catch((e) => console.error("Failed to clear logs:", e));
+            .catch(console.error);
     };
 
     const handleStop = () => {
         invoke("stop_command", { id: commandId })
             .then(() => setDetailsState((prev) => ({ ...prev, is_running: false, is_active: false })))
-            .catch((e) => console.error("Failed to stop command:", e));
+            .catch(console.error);
     };
 
     const handleStart = () => {
         invoke("start_command", { id: commandId })
             .then(() => setDetailsState((prev) => ({ ...prev, is_running: true, is_active: true })))
-            .catch((e) => console.error("Failed to start command:", e));
+            .catch(console.error);
     };
 
     const handleDelete = () => {
         invoke("delete_command", { id: commandId })
             .then(() => navigate({ to: "/" }))
-            .catch((e) => console.error("Failed to delete command:", e));
-    };
-
-    const startEdit = () => {
-        if (!selectedCommand) return;
-        setIsEditing(true);
+            .catch(console.error);
     };
 
     if (isLoading || !selectedCommand) {
         return (
             <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-                <div className="text-zinc-500">Loading...</div>
+                <div className="text-zinc-600 text-sm">Loading...</div>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
-            <header className="px-6 py-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md sticky top-0 z-10 w-full">
-                <div className="flex items-center gap-4 truncate">
-                    <button
-                        onClick={() => navigate({ to: "/" })}
-                        className="text-zinc-400 hover:text-white transition bg-zinc-800/50 hover:bg-zinc-800 px-3 py-1.5 rounded-md text-sm font-medium shrink-0 flex items-center gap-1.5"
-                    >
-                        <ArrowLeft className="w-4 h-4" /> Back
-                    </button>
-                    <div className="truncate">
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent truncate">
-                            {selectedCommand.name}
-                        </h1>
-                        <p className="text-xs text-zinc-400 mt-1 font-mono truncate">
-                            {selectedCommand.command_str}
-                        </p>
-                    </div>
+            {/* Header */}
+            <header className="px-5 py-3.5 border-b border-zinc-800/80 flex items-center gap-3 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10">
+                <button
+                    onClick={() => navigate({ to: "/" })}
+                    className="flex items-center gap-1.5 text-zinc-300 hover:text-zinc-100 transition-colors bg-zinc-800/50 hover:bg-zinc-800 px-2.5 py-1.5 rounded-md text-sm font-medium shrink-0"
+                >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
+
+                {/* Left accent strip based on state */}
+                <div className={`w-0.5 h-7 rounded-full shrink-0 ${detailsState.is_running ? "bg-emerald-500" : detailsState.is_active ? "bg-blue-500" : "bg-zinc-700"}`} />
+
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-semibold text-zinc-100 truncate leading-tight">{selectedCommand.name}</h1>
+                    <code className="text-[11px] text-zinc-400 font-mono truncate block">{selectedCommand.command_str}</code>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-4">
-                    {detailsState.next_run_at && !detailsState.is_running && detailsState.is_active && (
-                        <div className="text-sm font-mono text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded border border-zinc-700 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                            Next run in: {formatTimeRemaining(detailsState.next_run_at - now)}
-                        </div>
-                    )}
-                    <div
-                        className={`px-2 py-1 rounded text-xs font-bold ${detailsState.is_running
-                            ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
-                            : detailsState.is_active
-                                ? "bg-blue-500/20 text-blue-400 font-bold"
-                                : "bg-zinc-800 text-zinc-400"
-                            }`}
-                    >
-                        {detailsState.is_running
-                            ? "RUNNING"
-                            : detailsState.is_active
-                                ? "SCHEDULED"
-                                : "STOPPED"}
+
+                {/* Next run countdown */}
+                {detailsState.next_run_at && !detailsState.is_running && detailsState.is_active && (
+                    <div className="text-sm font-mono text-zinc-400 bg-zinc-800/60 px-2.5 py-1.5 rounded-md border border-zinc-700/60 flex items-center gap-1.5 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        {formatTimeRemaining(detailsState.next_run_at - now)}
                     </div>
+                )}
+
+                <StatusPill state={detailsState} />
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 bg-zinc-800/50 hover:bg-zinc-800 hover:text-zinc-200 border border-zinc-700/50 transition-all"
+                    >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
+
+                    {detailsState.is_active ? (
+                        <button
+                            onClick={handleStop}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-red-400 bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 hover:border-red-500/35 transition-all"
+                        >
+                            <Square className="w-3.5 h-3.5" /> Stop
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleStart}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-emerald-400 bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/35 transition-all"
+                        >
+                            <Play className="w-3.5 h-3.5 fill-emerald-400/80" /> Start
+                        </button>
+                    )}
 
                     <button
-                        onClick={handleClearLogs}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm transition font-medium flex items-center gap-1.5"
-                        title="Clear logs"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-red-500/80 bg-red-500/5 hover:bg-red-500/12 border border-red-500/20 hover:border-red-500/40 transition-all"
                     >
-                        <Trash2 className="w-4 h-4" /> Clear
-                    </button>
-                    <button
-                        onClick={startEdit}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm transition font-medium"
-                    >
-                        Edit
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-3 py-1.5 rounded-md text-sm transition font-medium"
-                    >
-                        Delete
-                    </button>
-                    <button
-                        onClick={handleStart}
-                        disabled={detailsState.is_active}
-                        className={`px-3 py-1.5 rounded-md text-sm transition font-medium ${detailsState.is_active
-                            ? "bg-emerald-500/5 text-emerald-400/30 border border-emerald-500/20 cursor-not-allowed"
-                            : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 cursor-pointer"
-                            }`}
-                    >
-                        Start
-                    </button>
-                    <button
-                        onClick={handleStop}
-                        disabled={!detailsState.is_active}
-                        className={`px-3 py-1.5 rounded-md text-sm transition font-medium ${!detailsState.is_active
-                            ? "bg-red-500/5 text-red-400/30 border border-red-500/20 cursor-not-allowed"
-                            : "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 cursor-pointer"
-                            }`}
-                    >
-                        Stop
+                        <AlertTriangle className="w-3.5 h-3.5" /> Delete
                     </button>
                 </div>
             </header>
-            <main className="flex-1 p-6 flex flex-col h-[calc(100vh-80px)] overflow-hidden">
+
+            {/* Delete confirmation modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 w-80 flex flex-col gap-4">
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                <AlertTriangle className="w-5 h-5 text-red-400" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-zinc-100">Delete command?</h3>
+                            <p className="text-sm text-zinc-500">
+                                <span className="text-zinc-300 font-medium">{selectedCommand.name}</span> will be permanently removed and all its scheduled tasks will be cancelled.
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-lg text-sm text-zinc-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button onClick={handleDelete} className="flex-1 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors font-medium">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main content */}
+            <main className="flex-1 p-5 flex flex-col h-[calc(100vh-57px)] overflow-hidden">
                 {isEditing ? (
                     <CommandEditForm
                         command={selectedCommand}
                         onCancel={() => setIsEditing(false)}
-                        onSuccess={() => {
-                            fetchCommands();
-                            setIsEditing(false);
-                        }}
+                        onSuccess={() => { fetchCommands(); setIsEditing(false); }}
                     />
                 ) : (
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-lg flex-1 overflow-y-auto p-4 font-mono text-sm shadow-inner relative">
-                        {detailsState.logs.length === 0 ? (
-                            <div className="text-zinc-500 flex h-full items-center justify-center italic">
-                                No output received yet.
+                    <div className="flex-1 flex flex-col min-h-0">
+                        {/* Log viewer header */}
+                        <div className="flex items-center justify-between mb-2.5">
+                            <div className="flex items-center gap-2 text-sm text-zinc-400">
+                                <Terminal className="w-3.5 h-3.5" />
+                                <span>Output Log</span>
+                                {detailsState.logs.length > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-500 border border-zinc-700/50">
+                                        {detailsState.logs.length} lines
+                                    </span>
+                                )}
                             </div>
-                        ) : (
-                            <div className="space-y-1 text-zinc-300 whitespace-pre-wrap">
-                                {detailsState.logs.map((log, idx) => (
-                                    <div key={idx} className="hover:bg-zinc-800/50 px-1 rounded">
-                                        {log}
-                                    </div>
-                                ))}
-                                <div ref={logsEndRef} />
-                            </div>
-                        )}
+                            {detailsState.logs.length > 0 && (
+                                <button
+                                    onClick={handleClearLogs}
+                                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/40 px-2.5 py-1 rounded-md transition-all"
+                                >
+                                    <Trash2 className="w-3 h-3" /> Clear
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Log body */}
+                        <div className="flex-1 bg-zinc-950 border border-zinc-800/70 rounded-xl overflow-y-auto p-4 font-mono text-sm min-h-0 relative">
+                            {detailsState.logs.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center gap-3 text-zinc-500">
+                                    <Terminal className="w-8 h-8 opacity-30" />
+                                    <span className="text-sm italic">No output yet. Start the command to see logs here.</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-0.5 text-zinc-300 whitespace-pre-wrap">
+                                    {detailsState.logs.map((log, idx) => (
+                                        <div key={idx} className="hover:bg-zinc-800/40 px-1 py-0.5 rounded">
+                                            {log}
+                                        </div>
+                                    ))}
+                                    <div ref={logsEndRef} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </main>
