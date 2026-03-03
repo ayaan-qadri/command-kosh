@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
 interface DeleteCommandModalProps {
@@ -20,34 +21,35 @@ export function DeleteCommandModal({ commandName, onDelete }: DeleteCommandModal
             </button>
 
             {/* Modal */}
-            {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 w-80 flex flex-col gap-4">
-                        <div className="flex flex-col items-center text-center gap-2">
-                            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                                <AlertTriangle className="w-5 h-5 text-red-400" />
+            {open && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 w-80 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex flex-col items-center text-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-1">
+                                <AlertTriangle className="w-6 h-6 text-red-500" />
                             </div>
-                            <h3 className="text-sm font-semibold text-zinc-100">Delete command?</h3>
-                            <p className="text-sm text-zinc-500">
-                                <span className="text-zinc-300 font-medium">{commandName}</span> will be permanently removed and all its scheduled tasks will be cancelled.
+                            <h3 className="text-base font-semibold text-zinc-100">Delete command?</h3>
+                            <p className="text-sm text-zinc-400 leading-relaxed">
+                                <span className="text-zinc-200 font-medium">{commandName}</span> will be permanently removed and all its scheduled tasks will be cancelled.
                             </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3 mt-2">
                             <button
                                 onClick={() => setOpen(false)}
-                                className="flex-1 py-2 rounded-lg text-sm text-zinc-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
+                                className="flex-1 py-2.5 rounded-lg text-sm text-zinc-300 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={onDelete}
-                                className="flex-1 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors font-medium"
+                                className="flex-1 py-2.5 rounded-lg text-sm text-red-100 bg-red-500/80 hover:bg-red-500 border border-red-600 transition-colors font-medium shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                             >
                                 Delete
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
