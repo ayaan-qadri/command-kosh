@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { Plus, X, Power } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { RegisteredCommand, CommandExecutionState } from "../../types";
@@ -15,8 +15,6 @@ export function CommandListPage() {
     const [commandStates, setCommandStates] = useState<Record<string, CommandExecutionState>>({});
     const [showForm, setShowForm] = useState(false);
     const [showAutostartBanner, setShowAutostartBanner] = useState(false);
-    const [showQuitModal, setShowQuitModal] = useState(false);
-    const [dontAskQuit, setDontAskQuit] = useState(false);
     const navigate = useNavigate();
 
     const fetchStates = () => {
@@ -80,29 +78,7 @@ export function CommandListPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                    {/* Quit — icon only with tooltip */}
-                    <div className="group relative">
-                        <button
-                            onClick={async () => {
-                                if (localStorage.getItem("hideQuitConfirm") === "true") {
-                                    await invoke("quit_app");
-                                } else {
-                                    setShowQuitModal(true);
-                                }
-                            }}
-                            className="flex items-center justify-center w-8 h-8 rounded-md text-zinc-500 hover:text-red-400 bg-zinc-800/50 hover:bg-red-500/10 border border-zinc-700/50 hover:border-red-500/30 transition-all"
-                            title="Quit App"
-                        >
-                            <Power className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Tooltip */}
-                        <div className="absolute top-full mt-2 right-0 w-64 bg-zinc-900 border border-zinc-700/80 text-zinc-300 text-xs rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 p-3 leading-relaxed">
-                            <div className="absolute -top-1.5 right-3 w-3 h-3 bg-zinc-900 border-l border-t border-zinc-700/80 transform rotate-45" />
-                            <strong className="block text-zinc-100 mb-1 text-xs">Why quit the app?</strong>
-                            Closing the window only hides it to the system tray so commands keep running. Use this to fully terminate the app and stop all scheduled jobs.
-                        </div>
-                    </div>
+                    <QuitModal />
 
                     {/* New Command */}
                     <button
@@ -122,13 +98,6 @@ export function CommandListPage() {
                 <AutostartBanner onClose={() => setShowAutostartBanner(false)} />
             )}
 
-            {showQuitModal && (
-                <QuitModal
-                    onClose={() => setShowQuitModal(false)}
-                    dontAskQuit={dontAskQuit}
-                    setDontAskQuit={setDontAskQuit}
-                />
-            )}
 
             <main className="flex-1 p-6 z-0 relative">
                 <div className="max-w-4xl mx-auto space-y-6">

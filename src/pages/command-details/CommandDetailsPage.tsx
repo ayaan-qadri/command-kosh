@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ArrowLeft, Trash2, Play, Square, Pencil, AlertTriangle, Terminal } from "lucide-react";
+import { ArrowLeft, Trash2, Play, Square, Pencil, Terminal } from "lucide-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { RegisteredCommand, CommandExecutionState } from "../../types";
 
 import { formatTimeRemaining } from "../../utils/time";
 import { CommandEditForm } from "./components/CommandEditForm";
+import { DeleteCommandModal } from "./components/DeleteCommandModal";
 
 function StatusPill({ state }: { state: CommandExecutionState }) {
     if (state.is_running) return (
@@ -33,7 +34,6 @@ export function CommandDetailsPage() {
     const [selectedCommand, setSelectedCommand] = useState<RegisteredCommand | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [detailsState, setDetailsState] = useState<CommandExecutionState>({ is_running: false, is_active: false, logs: [] });
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const logsEndRef = useRef<HTMLDivElement>(null);
     const [now, setNow] = useState(Date.now() / 1000);
     const [isEditing, setIsEditing] = useState(false);
@@ -189,39 +189,12 @@ export function CommandDetailsPage() {
                         </button>
                     )}
 
-                    <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-red-500/80 bg-red-500/5 hover:bg-red-500/12 border border-red-500/20 hover:border-red-500/40 transition-all"
-                    >
-                        <AlertTriangle className="w-3.5 h-3.5" /> Delete
-                    </button>
+                    <DeleteCommandModal
+                        commandName={selectedCommand.name}
+                        onDelete={handleDelete}
+                    />
                 </div>
             </header>
-
-            {/* Delete confirmation modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 w-80 flex flex-col gap-4">
-                        <div className="flex flex-col items-center text-center gap-2">
-                            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                                <AlertTriangle className="w-5 h-5 text-red-400" />
-                            </div>
-                            <h3 className="text-sm font-semibold text-zinc-100">Delete command?</h3>
-                            <p className="text-sm text-zinc-500">
-                                <span className="text-zinc-300 font-medium">{selectedCommand.name}</span> will be permanently removed and all its scheduled tasks will be cancelled.
-                            </p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-lg text-sm text-zinc-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors">
-                                Cancel
-                            </button>
-                            <button onClick={handleDelete} className="flex-1 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors font-medium">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Main content */}
             <main className="flex-1 p-5 flex flex-col h-[calc(100vh-57px)] overflow-hidden">
