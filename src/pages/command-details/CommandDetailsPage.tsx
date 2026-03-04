@@ -188,7 +188,7 @@ export function CommandDetailsPage() {
             </header>
 
             {/* Main content */}
-            <main className="flex-1 p-5 flex flex-col h-[calc(100vh-57px)] overflow-hidden">
+            <main className="flex-1 p-5 flex flex-col">
                 {isEditing ? (
                     <CommandEditForm
                         command={selectedCommand}
