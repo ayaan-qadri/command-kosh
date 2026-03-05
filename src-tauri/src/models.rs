@@ -40,8 +40,26 @@ pub struct CommandExecutionState {
     pub child_pid: Option<u32>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ChangeType {
+    Added,
+    Modified,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TamperedCommandInfo {
+    pub id: String,
+    pub name: String,
+    pub command_str: String,
+    pub change_type: ChangeType,
+}
+
 pub struct AppState {
     pub commands: Arc<Mutex<HashMap<String, RegisteredCommand>>>,
     pub execution_states: Arc<Mutex<HashMap<String, CommandExecutionState>>>,
     pub task_handles: Arc<Mutex<HashMap<String, tauri::async_runtime::JoinHandle<()>>>>,
+    /// The trusted baseline of commands from the last successfully verified load.
+    pub trusted_baseline: Arc<Mutex<HashMap<String, RegisteredCommand>>>,
+    /// List of commands detected as tampered. Non-empty means tampering was detected.
+    pub tampered_commands: Arc<Mutex<Vec<TamperedCommandInfo>>>,
 }

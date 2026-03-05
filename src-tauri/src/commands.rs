@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::models::{AppState, CommandExecutionState, RegisteredCommand};
+use crate::models::{AppState, CommandExecutionState, RegisteredCommand, TamperedCommandInfo};
 use crate::store::save_commands;
 use crate::scheduler::spawn_command_task;
 
@@ -40,7 +40,10 @@ pub async fn register_command(
         cmds.insert(id.clone(), new_cmd.clone());
         let mut states = state.execution_states.lock().await;
         states.insert(id.clone(), CommandExecutionState::default());
-        save_commands(&app_handle, &cmds);
+        save_commands(&app_handle, &cmds).await;
+        // Update trusted baseline
+        let mut baseline = state.trusted_baseline.lock().await;
+        baseline.insert(id.clone(), new_cmd.clone());
     }
 
     let commands_ref = Arc::clone(&state.commands);
@@ -78,91 +81,106 @@ pub async fn get_all_command_states(state: tauri::State<'_, AppState>) -> Result
 
 #[tauri::command]
 pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let pid_to_kill = {
-        let states = state.execution_states.lock().await;
-        if let Some(st) = states.get(&id) {
-            st.child_pid
-        } else {
-            None
-        }
-    };
-    if let Some(pid) = pid_to_kill {
-        crate::scheduler::kill_process_tree(pid);
-    }
-
+    // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
         }
     }
+
+    // Lock order: commands → execution_states → trusted_baseline
+    let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
         cmds.remove(&id);
-        save_commands(&app_handle, &cmds);
-    }
-    {
+        save_commands(&app_handle, &cmds).await;
+
         let mut states = state.execution_states.lock().await;
+        pid_to_kill = states.get(&id).and_then(|st| st.child_pid);
         states.remove(&id);
+
+        let mut baseline = state.trusted_baseline.lock().await;
+        baseline.remove(&id);
     }
+
+    if let Some(pid) = pid_to_kill {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let pid_to_kill = {
-        let states = state.execution_states.lock().await;
-        if let Some(st) = states.get(&id) {
-            st.child_pid
-        } else {
-            None
-        }
-    };
-    if let Some(pid) = pid_to_kill {
-        crate::scheduler::kill_process_tree(pid);
-    }
-
+    // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
         }
     }
+
+    // Lock order: commands → execution_states → trusted_baseline
+    let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
         if let Some(cmd) = cmds.get_mut(&id) {
             cmd.actively_stopped = true;
         }
-        save_commands(&app_handle, &cmds);
-    }
-    {
+        save_commands(&app_handle, &cmds).await;
+
         let mut states = state.execution_states.lock().await;
-        if let Some(st) = states.get_mut(&id) {
+        pid_to_kill = if let Some(st) = states.get_mut(&id) {
+            let pid = st.child_pid;
             st.is_running = false;
             st.is_active = false;
             st.next_run_at = None;
             st.child_pid = None;
+            pid
+        } else {
+            None
+        };
+
+        let mut baseline = state.trusted_baseline.lock().await;
+        if let Some(cmd) = baseline.get_mut(&id) {
+            cmd.actively_stopped = true;
         }
     }
+
+    if let Some(pid) = pid_to_kill {
+        crate::scheduler::kill_process_tree(pid);
+    }
+
     Ok(())
 }
 
 #[tauri::command]
 pub async fn start_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+    // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
         }
     }
+
+    // Lock order: commands → trusted_baseline (execution_states not needed here)
     let cmd = {
         let mut cmds = state.commands.lock().await;
         if let Some(cmd) = cmds.get_mut(&id) {
             cmd.actively_stopped = false;
         }
-        save_commands(&app_handle, &cmds);
+        save_commands(&app_handle, &cmds).await;
+
+        let mut baseline = state.trusted_baseline.lock().await;
+        if let Some(cmd) = baseline.get_mut(&id) {
+            cmd.actively_stopped = false;
+        }
+
         cmds.get(&id).cloned()
     };
+
     if let Some(c) = cmd {
         spawn_command_task(
             app_handle,
@@ -192,6 +210,8 @@ pub async fn edit_command(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    // Lock order: commands → execution_states → trusted_baseline
+    let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
         if let Some(cmd) = cmds.get_mut(&id) {
@@ -207,27 +227,29 @@ pub async fn edit_command(
             cmd.auto_restart_retries = auto_restart_retries;
             cmd.auto_run_on_complete = auto_run_on_complete;
         }
-        save_commands(&app_handle, &cmds);
-    }
-    let pid_to_kill = {
+        save_commands(&app_handle, &cmds).await;
+
         let states = state.execution_states.lock().await;
-        if let Some(st) = states.get(&id) {
-            st.child_pid
-        } else {
-            None
+        pid_to_kill = states.get(&id).and_then(|st| st.child_pid);
+
+        let mut baseline = state.trusted_baseline.lock().await;
+        if let Some(cmd) = cmds.get(&id) {
+            baseline.insert(id.clone(), cmd.clone());
         }
-    };
+    }
+
     if let Some(pid) = pid_to_kill {
         crate::scheduler::kill_process_tree(pid);
     }
 
+    // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
         }
     }
-    
+
     if auto_start {
         spawn_command_task(
             app_handle,
@@ -268,5 +290,81 @@ pub async fn clear_logs(id: String, state: tauri::State<'_, AppState>) -> Result
     if let Some(st) = states.get_mut(&id) {
         st.logs.clear();
     }
+    Ok(())
+}
+
+/// Pull-based query for the current tampering state. The frontend calls this on mount
+/// to avoid missing the push event if it fires before listeners are registered.
+#[tauri::command]
+pub async fn get_tampering_state(state: tauri::State<'_, AppState>) -> Result<Vec<TamperedCommandInfo>, String> {
+    let tampered = state.tampered_commands.lock().await;
+    Ok(tampered.clone())
+}
+
+/// Resolve tampering by accepting only the commands the user explicitly chose to keep.
+/// Commands not in accepted_ids are removed. The file is re-signed and accepted commands
+/// are started if they have auto_start enabled.
+#[tauri::command]
+pub async fn resolve_tampering(
+    accepted_ids: Vec<String>,
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    // Isolated scope: collect tampered IDs upfront to avoid nested locking
+    let tampered_ids: Vec<String> = {
+        let tampered = state.tampered_commands.lock().await;
+        if tampered.is_empty() {
+            return Err("No tampering to resolve".to_string());
+        }
+        tampered.iter().map(|t| t.id.clone()).collect()
+    };
+
+    // Lock order: commands → execution_states → trusted_baseline
+    let commands_to_start: Vec<(String, u64)>;
+    {
+        let mut cmds = state.commands.lock().await;
+        let mut states = state.execution_states.lock().await;
+
+        // Remove tampered commands that were NOT accepted
+        for tid in &tampered_ids {
+            if !accepted_ids.contains(tid) {
+                cmds.remove(tid);
+                states.remove(tid);
+            }
+        }
+
+        // Re-sign the commands file
+        save_commands(&app_handle, &cmds).await;
+
+        // Update the trusted baseline with the now-verified commands
+        let mut baseline = state.trusted_baseline.lock().await;
+        *baseline = cmds.clone();
+
+        // Collect only accepted auto-start commands (not the entire map)
+        commands_to_start = cmds
+            .iter()
+            .filter(|(id, cmd)| accepted_ids.contains(id) && cmd.auto_start && !cmd.actively_stopped)
+            .map(|(id, cmd)| (id.clone(), cmd.interval_secs))
+            .collect();
+    }
+
+    // Isolated scope: clear tampered commands (signals tampering is resolved)
+    {
+        let mut tampered = state.tampered_commands.lock().await;
+        tampered.clear();
+    }
+
+    // Now spawn tasks for accepted auto-start commands only
+    for (id, interval_secs) in commands_to_start {
+        spawn_command_task(
+            app_handle.clone(),
+            id,
+            interval_secs,
+            Arc::clone(&state.commands),
+            Arc::clone(&state.execution_states),
+            Arc::clone(&state.task_handles),
+        );
+    }
+
     Ok(())
 }

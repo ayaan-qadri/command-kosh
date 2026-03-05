@@ -26,4 +26,9 @@ uuid = { version = "1.21.0", features = ["v4", "serde"] }
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-notification = "2.3.3"
 tauri-plugin-single-instance = "2.4.0"
+hmac = "0.12"
+sha2 = "0.10"
+rand = "0.8"
+hex = "0.4"
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service"] }
 

@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TamperingReviewRouteImport } from './routes/tampering-review'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CommandDetailsCommandIdRouteImport } from './routes/command-details.$commandId'
 
+const TamperingReviewRoute = TamperingReviewRouteImport.update({
+  id: '/tampering-review',
+  path: '/tampering-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +31,43 @@ const CommandDetailsCommandIdRoute = CommandDetailsCommandIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/tampering-review': typeof TamperingReviewRoute
   '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/tampering-review': typeof TamperingReviewRoute
   '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/tampering-review': typeof TamperingReviewRoute
   '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/command-details/$commandId'
+  fullPaths: '/' | '/tampering-review' | '/command-details/$commandId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/command-details/$commandId'
-  id: '__root__' | '/' | '/command-details/$commandId'
+  to: '/' | '/tampering-review' | '/command-details/$commandId'
+  id: '__root__' | '/' | '/tampering-review' | '/command-details/$commandId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TamperingReviewRoute: typeof TamperingReviewRoute
   CommandDetailsCommandIdRoute: typeof CommandDetailsCommandIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tampering-review': {
+      id: '/tampering-review'
+      path: '/tampering-review'
+      fullPath: '/tampering-review'
+      preLoaderRoute: typeof TamperingReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TamperingReviewRoute: TamperingReviewRoute,
   CommandDetailsCommandIdRoute: CommandDetailsCommandIdRoute,
 }
 export const routeTree = rootRouteImport

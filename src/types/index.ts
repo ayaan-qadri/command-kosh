@@ -18,3 +18,11 @@ export interface CommandExecutionState {
     logs: string[];
     next_run_at?: number | null;
 }
+
+export interface TamperedCommandInfo {
+    id: string;
+    name: string;
+    command_str: string;
+    change_type: "Added" | "Modified";
+}
+

@@ -2,17 +2,18 @@ pub mod models;
 pub mod store;
 pub mod scheduler;
 pub mod commands;
+pub mod integrity;
 
 use std::collections::HashMap;
-use std::fs;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::Manager;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::menu::{Menu, MenuItem};
+use tauri::Emitter;
 
-use models::{AppState, CommandExecutionState, RegisteredCommand};
-use store::get_commands_file_path;
+use models::{AppState, CommandExecutionState, ChangeType, TamperedCommandInfo};
+use integrity::VerifyResult;
 use scheduler::spawn_command_task;
 use commands::*;
 
@@ -88,39 +89,60 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // --- Show window on launch (non-autostart) ---
-            // If the app was launched with --hidden (e.g., from autostart), keep it hidden.
-            let args: Vec<String> = std::env::args().collect();
-            let is_hidden = args.iter().any(|arg| arg == "--hidden");
+            // --- Integrity verification & command loading ---
+            let verify_result = tauri::async_runtime::block_on(integrity::verify_and_load(app.handle()));
 
-            if !is_hidden {
-                show_window(app.handle());
-            } else if let Some(window) = app.get_webview_window("main") {
-                // If it is hidden but the builder created the main window (because of tauri.conf.json)
-                let _ = window.close();
-            }
-
-            // --- Load commands from store ---
-            let mut commands = HashMap::new();
-            let path = get_commands_file_path(app.handle());
-            if let Ok(data) = fs::read_to_string(&path) {
-                if let Ok(parsed) = serde_json::from_str::<HashMap<String, RegisteredCommand>>(&data) {
-                    commands = parsed;
+            let (commands, tampered_list, should_auto_start) = match verify_result {
+                VerifyResult::Valid(cmds) => {
+                    // Signature valid — safe to auto-start
+                    (cmds, Vec::new(), true)
                 }
-            }
+                VerifyResult::Tampered(tampered_cmds) => {
+                    // Signature invalid — compute diff against trusted baseline (empty on first detection)
+                    // Since this is the tampered state, we have no prior baseline in memory yet,
+                    // so all commands in the tampered file are considered suspicious.
+                    let tampered_info: Vec<TamperedCommandInfo> = tampered_cmds
+                        .iter()
+                        .map(|(_, cmd)| TamperedCommandInfo {
+                            id: cmd.id.clone(),
+                            name: cmd.name.clone(),
+                            command_str: cmd.command_str.clone(),
+                            change_type: ChangeType::Added, // All are suspicious since we have no verified baseline
+                        })
+                        .collect();
+                    (tampered_cmds, tampered_info, false)
+                }
+                VerifyResult::Empty => {
+                    // Fresh install or key was regenerated — start clean
+                    (HashMap::new(), Vec::new(), true)
+                }
+            };
 
+            let tampering_detected = !tampered_list.is_empty();
+
+            // Build initial execution states
             let mut states_map = HashMap::new();
             for (id, _) in commands.iter() {
                 states_map.insert(id.clone(), CommandExecutionState::default());
             }
 
+            // Cache the trusted baseline: only if commands are verified valid
+            let trusted_baseline = if !tampering_detected {
+                commands.clone()
+            } else {
+                HashMap::new() // No trusted baseline when tampered
+            };
+
             let commands_ref = Arc::new(Mutex::new(commands.clone()));
             let states_ref = Arc::new(Mutex::new(states_map));
             let handles_ref = Arc::new(Mutex::new(HashMap::new()));
 
-            for (id, cmd) in commands.iter() {
-                if cmd.auto_start && !cmd.actively_stopped {
-                    spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
+            // Only auto-start commands if integrity verification passed
+            if should_auto_start {
+                for (id, cmd) in commands.iter() {
+                    if cmd.auto_start && !cmd.actively_stopped {
+                        spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
+                    }
                 }
             }
 
@@ -128,8 +150,29 @@ pub fn run() {
                 commands: commands_ref,
                 execution_states: states_ref,
                 task_handles: handles_ref,
+                trusted_baseline: Arc::new(Mutex::new(trusted_baseline)),
+                tampered_commands: Arc::new(Mutex::new(tampered_list)),
             };
             app.manage(app_state);
+
+            // --- Show window logic ---
+            let args: Vec<String> = std::env::args().collect();
+            let is_hidden = args.iter().any(|arg| arg == "--hidden");
+
+            if tampering_detected {
+                // Force-open the window on tampering, regardless of --hidden flag
+                show_window(app.handle());
+                // Emit event after a short delay so the frontend has time to mount listeners
+                let app_clone = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    app_clone.emit("tampering-detected", ()).ok();
+                });
+            } else if !is_hidden {
+                show_window(app.handle());
+            } else if let Some(window) = app.get_webview_window("main") {
+                let _ = window.close();
+            }
 
             Ok(())
         })
@@ -143,14 +186,14 @@ pub fn run() {
             start_command,
             edit_command,
             quit_app,
-            clear_logs
+            clear_logs,
+            get_tampering_state,
+            resolve_tampering
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|_app_handle, event| {
             if let tauri::RunEvent::ExitRequested { api, .. } = event {
-                // Prevent app completely exiting when all windows are closed,
-                // so it keeps running in the system tray and scheduling tasks.
                 api.prevent_exit();
             }
         });
