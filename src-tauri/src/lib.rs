@@ -1,21 +1,21 @@
-mod models;
-mod store;
-mod scheduler;
 mod commands;
-mod integrity;
+pub mod integrity;
+pub mod models;
+mod scheduler;
+mod store;
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use tauri::Manager;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Emitter;
+use tauri::Manager;
+use tokio::sync::Mutex;
 
-use models::{AppState, CommandExecutionState, ChangeType, TamperedCommandInfo};
-use integrity::VerifyResult;
-use scheduler::spawn_command_task;
 use commands::*;
+use integrity::VerifyResult;
+use models::{AppState, ChangeType, CommandExecutionState, TamperedCommandInfo};
+use scheduler::spawn_command_task;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,7 +24,10 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_window(app);
         }))
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden"]),
+        ))
         .setup(|app| {
             // --- System Tray Setup ---
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
@@ -90,7 +93,8 @@ pub fn run() {
                 .build(app)?;
 
             // --- Integrity verification & command loading ---
-            let verify_result = tauri::async_runtime::block_on(integrity::verify_and_load(app.handle()));
+            let verify_result =
+                tauri::async_runtime::block_on(integrity::verify_and_load(app.handle()));
 
             let (commands, tampered_list, should_auto_start) = match verify_result {
                 VerifyResult::Valid(cmds) => {
@@ -126,8 +130,6 @@ pub fn run() {
                 states_map.insert(id.clone(), CommandExecutionState::default());
             }
 
-
-
             let commands_ref = Arc::new(Mutex::new(commands.clone()));
             let states_ref = Arc::new(Mutex::new(states_map));
             let handles_ref = Arc::new(Mutex::new(HashMap::new()));
@@ -136,7 +138,14 @@ pub fn run() {
             if should_auto_start {
                 for (id, cmd) in commands.iter() {
                     if cmd.auto_start && !cmd.actively_stopped {
-                        spawn_command_task(app.handle().clone(), id.clone(), cmd.interval_secs, Arc::clone(&commands_ref), Arc::clone(&states_ref), Arc::clone(&handles_ref));
+                        spawn_command_task(
+                            app.handle().clone(),
+                            id.clone(),
+                            cmd.interval_secs,
+                            Arc::clone(&commands_ref),
+                            Arc::clone(&states_ref),
+                            Arc::clone(&handles_ref),
+                        );
                     }
                 }
             }
@@ -202,7 +211,7 @@ fn show_window(app: &tauri::AppHandle) {
         let builder = tauri::WebviewWindowBuilder::new(
             app,
             "main",
-            tauri::WebviewUrl::App("index.html".into())
+            tauri::WebviewUrl::App("index.html".into()),
         )
         .title("Command Kosh")
         .inner_size(800.0, 600.0)
@@ -215,7 +224,7 @@ fn show_window(app: &tauri::AppHandle) {
                 tauri::WebviewWindowBuilder::new(
                     app,
                     "main",
-                    tauri::WebviewUrl::App("index.html".into())
+                    tauri::WebviewUrl::App("index.html".into()),
                 )
                 .title("Command Kosh")
                 .inner_size(800.0, 600.0)

@@ -101,22 +101,25 @@ fn get_sig_file_path(app_handle: &tauri::AppHandle) -> PathBuf {
 }
 
 /// Sign the commands map and write both commands.json and commands.json.sig.
-pub async fn sign_and_save(app_handle: &tauri::AppHandle, commands: &HashMap<String, RegisteredCommand>) -> Result<(), String> {
+pub async fn sign_and_save(
+    app_handle: &tauri::AppHandle,
+    commands: &HashMap<String, RegisteredCommand>,
+) -> Result<(), String> {
     let app_handle_clone = app_handle.clone();
-    let (key, _) = tokio::task::spawn_blocking(move || {
-        get_or_create_hmac_key(&app_handle_clone)
-    }).await.map_err(|e| e.to_string())?;
+    let (key, _) = tokio::task::spawn_blocking(move || get_or_create_hmac_key(&app_handle_clone))
+        .await
+        .map_err(|e| e.to_string())?;
 
     if let Ok(json) = canonical_json(commands) {
         let cmd_path = get_commands_file_path(app_handle);
         let sig_path = get_sig_file_path(app_handle);
-        
+
         let _ = fs::write(&cmd_path, &json);
         let written = fs::read(&cmd_path).unwrap_or_else(|_| json.as_bytes().to_vec());
         let sig = compute_hmac(&written, &key);
         let _ = fs::write(&sig_path, &sig);
     }
-    
+
     Ok(())
 }
 
@@ -130,12 +133,14 @@ pub async fn verify_and_load(app_handle: &tauri::AppHandle) -> VerifyResult {
         Ok(b) if !b.is_empty() => b,
         _ => return VerifyResult::Empty,
     };
-    
+
     let data = match String::from_utf8(raw_bytes.clone()) {
         Ok(s) => {
-            if s.trim().is_empty() { return VerifyResult::Empty; }
+            if s.trim().is_empty() {
+                return VerifyResult::Empty;
+            }
             s
-        },
+        }
         _ => return VerifyResult::Empty,
     };
 
@@ -149,7 +154,9 @@ pub async fn verify_and_load(app_handle: &tauri::AppHandle) -> VerifyResult {
     let app_handle_clone = app_handle.clone();
     let (key, key_is_new) = match tokio::task::spawn_blocking(move || {
         get_or_create_hmac_key(&app_handle_clone)
-    }).await {
+    })
+    .await
+    {
         Ok(res) => res,
         Err(_) => return VerifyResult::Tampered(commands),
     };
@@ -174,3 +181,4 @@ pub async fn verify_and_load(app_handle: &tauri::AppHandle) -> VerifyResult {
         VerifyResult::Tampered(commands)
     }
 }
+
