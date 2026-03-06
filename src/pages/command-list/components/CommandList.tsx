@@ -74,7 +74,7 @@ export function CommandList({ setShowAutostartBanner }: CommandListProps) {
 
         try {
             const currentlyEnabled = await isEnabled();
-            const shouldEnable = fetchedCommands.some(c => c.auto_start !== false);
+            const shouldEnable = fetchedCommands.some(c => c.auto_start === true);
 
             if (shouldEnable && !currentlyEnabled) {
                 await enable();

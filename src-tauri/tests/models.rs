@@ -18,7 +18,7 @@ fn test_registered_command_deserialization_defaults() {
     assert_eq!(cmd.interval_secs, 60);
 
     // Required defaults
-    assert_eq!(cmd.auto_start, true, "auto_start should default to true");
+    assert_eq!(cmd.auto_start, false, "auto_start should default to false");
     assert_eq!(cmd.run_at_secs, None);
     assert_eq!(cmd.actively_stopped, false);
     assert_eq!(cmd.notify_on_failure, false);

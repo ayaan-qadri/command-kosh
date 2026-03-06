@@ -13,7 +13,7 @@ pub struct RegisteredCommand {
     pub run_at_secs: Option<u64>,
     #[serde(default)]
     pub actively_stopped: bool,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub auto_start: bool,
     #[serde(default)]
     pub notify_on_failure: bool,
@@ -25,10 +25,6 @@ pub struct RegisteredCommand {
     pub auto_restart_retries: u32,
     #[serde(default)]
     pub auto_run_on_complete: bool,
-}
-
-pub fn default_true() -> bool {
-    true
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
