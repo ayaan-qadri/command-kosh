@@ -110,17 +110,19 @@ export function CommandEditForm({ command, onCancel, onSuccess }: CommandEditFor
             if (data.datetime) runAt = Math.floor(new Date(data.datetime).getTime() / 1000);
         }
         invoke("edit_command", {
-            id: command.id,
-            name: data.name,
-            commandStr: data.commandStr,
-            intervalSecs: interval,
-            runAtSecs: runAt,
-            autoStart: data.autoStart,
-            notifyOnFailure: data.notifyOnFailure,
-            notifyOnSuccess: data.notifyOnSuccess,
-            autoRestartOnFail: data.autoRestartOnFail,
-            autoRestartRetries: parseInt(data.autoRestartRetries) || 0,
-            autoRunOnComplete: data.autoRunOnComplete,
+            args: {
+                id: command.id,
+                name: data.name,
+                command_str: data.commandStr,
+                interval_secs: interval,
+                run_at_secs: runAt,
+                auto_start: data.autoStart,
+                notify_on_failure: data.notifyOnFailure,
+                notify_on_success: data.notifyOnSuccess,
+                auto_restart_on_fail: data.autoRestartOnFail,
+                auto_restart_retries: parseInt(data.autoRestartRetries) || 0,
+                auto_run_on_complete: data.autoRunOnComplete,
+            }
         }).then(() => onSuccess())
             .catch((e) => console.error("Failed to edit command:", e));
     };

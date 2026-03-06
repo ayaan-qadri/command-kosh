@@ -1,38 +1,43 @@
+use crate::models::{AppState, CommandExecutionState, RegisteredCommand, TamperedCommandInfo};
+use crate::scheduler::spawn_command_task;
+use crate::store::save_commands;
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::models::{AppState, CommandExecutionState, RegisteredCommand, TamperedCommandInfo};
-use crate::store::save_commands;
-use crate::scheduler::spawn_command_task;
+
+#[derive(serde::Deserialize)]
+pub struct CommandArgs {
+    pub name: String,
+    pub command_str: String,
+    pub interval_secs: u64,
+    pub run_at_secs: Option<u64>,
+    pub auto_start: bool,
+    pub notify_on_failure: bool,
+    pub notify_on_success: bool,
+    pub auto_restart_on_fail: bool,
+    pub auto_restart_retries: u32,
+    pub auto_run_on_complete: bool,
+}
 
 #[tauri::command]
 pub async fn register_command(
-    name: String,
-    command_str: String,
-    interval_secs: u64,
-    run_at_secs: Option<u64>,
-    auto_start: bool,
-    notify_on_failure: bool,
-    notify_on_success: bool,
-    auto_restart_on_fail: bool,
-    auto_restart_retries: u32,
-    auto_run_on_complete: bool,
+    args: CommandArgs,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
     let id = Uuid::new_v4().to_string();
     let new_cmd = RegisteredCommand {
         id: id.clone(),
-        name,
-        command_str: command_str.clone(),
-        interval_secs,
-        run_at_secs,
-        actively_stopped: !auto_start,
-        auto_start,
-        notify_on_failure,
-        notify_on_success,
-        auto_restart_on_fail,
-        auto_restart_retries,
-        auto_run_on_complete,
+        name: args.name,
+        command_str: args.command_str.clone(),
+        interval_secs: args.interval_secs,
+        run_at_secs: args.run_at_secs,
+        actively_stopped: !args.auto_start,
+        auto_start: args.auto_start,
+        notify_on_failure: args.notify_on_failure,
+        notify_on_success: args.notify_on_success,
+        auto_restart_on_fail: args.auto_restart_on_fail,
+        auto_restart_retries: args.auto_restart_retries,
+        auto_run_on_complete: args.auto_run_on_complete,
     };
 
     {
@@ -47,21 +52,33 @@ pub async fn register_command(
     let states_ref = Arc::clone(&state.execution_states);
     let handles_ref = Arc::clone(&state.task_handles);
 
-    if auto_start {
-        spawn_command_task(app_handle, id.clone(), interval_secs, commands_ref, states_ref, handles_ref);
+    if args.auto_start {
+        spawn_command_task(
+            app_handle,
+            id.clone(),
+            args.interval_secs,
+            commands_ref,
+            states_ref,
+            handles_ref,
+        );
     }
 
     Ok(id)
 }
 
 #[tauri::command]
-pub async fn get_commands(state: tauri::State<'_, AppState>) -> Result<Vec<RegisteredCommand>, String> {
+pub async fn get_commands(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<RegisteredCommand>, String> {
     let cmds = state.commands.lock().await;
     Ok(cmds.values().cloned().collect())
 }
 
 #[tauri::command]
-pub async fn get_command_state(id: String, state: tauri::State<'_, AppState>) -> Result<CommandExecutionState, String> {
+pub async fn get_command_state(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<CommandExecutionState, String> {
     let states = state.execution_states.lock().await;
     if let Some(st) = states.get(&id) {
         Ok(st.clone())
@@ -71,13 +88,19 @@ pub async fn get_command_state(id: String, state: tauri::State<'_, AppState>) ->
 }
 
 #[tauri::command]
-pub async fn get_all_command_states(state: tauri::State<'_, AppState>) -> Result<std::collections::HashMap<String, CommandExecutionState>, String> {
+pub async fn get_all_command_states(
+    state: tauri::State<'_, AppState>,
+) -> Result<std::collections::HashMap<String, CommandExecutionState>, String> {
     let states = state.execution_states.lock().await;
     Ok(states.clone())
 }
 
 #[tauri::command]
-pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn delete_command(
+    id: String,
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
@@ -106,7 +129,11 @@ pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_h
 }
 
 #[tauri::command]
-pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn stop_command(
+    id: String,
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
@@ -145,7 +172,11 @@ pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_han
 }
 
 #[tauri::command]
-pub async fn start_command(id: String, state: tauri::State<'_, AppState>, app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn start_command(
+    id: String,
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
@@ -178,19 +209,24 @@ pub async fn start_command(id: String, state: tauri::State<'_, AppState>, app_ha
     Ok(())
 }
 
+#[derive(serde::Deserialize)]
+pub struct EditCommandArgs {
+    pub id: String,
+    pub name: String,
+    pub command_str: String,
+    pub interval_secs: u64,
+    pub run_at_secs: Option<u64>,
+    pub auto_start: bool,
+    pub notify_on_failure: bool,
+    pub notify_on_success: bool,
+    pub auto_restart_on_fail: bool,
+    pub auto_restart_retries: u32,
+    pub auto_run_on_complete: bool,
+}
+
 #[tauri::command]
 pub async fn edit_command(
-    id: String,
-    name: String,
-    command_str: String,
-    interval_secs: u64,
-    run_at_secs: Option<u64>,
-    auto_start: bool,
-    notify_on_failure: bool,
-    notify_on_success: bool,
-    auto_restart_on_fail: bool,
-    auto_restart_retries: u32,
-    auto_run_on_complete: bool,
+    args: EditCommandArgs,
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -198,23 +234,23 @@ pub async fn edit_command(
     let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
-        if let Some(cmd) = cmds.get_mut(&id) {
-            cmd.name = name;
-            cmd.command_str = command_str;
-            cmd.interval_secs = interval_secs;
-            cmd.run_at_secs = run_at_secs;
-            cmd.auto_start = auto_start;
-            cmd.actively_stopped = !auto_start;
-            cmd.notify_on_failure = notify_on_failure;
-            cmd.notify_on_success = notify_on_success;
-            cmd.auto_restart_on_fail = auto_restart_on_fail;
-            cmd.auto_restart_retries = auto_restart_retries;
-            cmd.auto_run_on_complete = auto_run_on_complete;
+        if let Some(cmd) = cmds.get_mut(&args.id) {
+            cmd.name = args.name;
+            cmd.command_str = args.command_str;
+            cmd.interval_secs = args.interval_secs;
+            cmd.run_at_secs = args.run_at_secs;
+            cmd.auto_start = args.auto_start;
+            cmd.actively_stopped = !args.auto_start;
+            cmd.notify_on_failure = args.notify_on_failure;
+            cmd.notify_on_success = args.notify_on_success;
+            cmd.auto_restart_on_fail = args.auto_restart_on_fail;
+            cmd.auto_restart_retries = args.auto_restart_retries;
+            cmd.auto_run_on_complete = args.auto_run_on_complete;
         }
         save_commands(&app_handle, &cmds).await;
 
         let states = state.execution_states.lock().await;
-        pid_to_kill = states.get(&id).and_then(|st| st.child_pid);
+        pid_to_kill = states.get(&args.id).and_then(|st| st.child_pid);
     }
 
     if let Some(pid) = pid_to_kill {
@@ -224,16 +260,16 @@ pub async fn edit_command(
     // Isolated scope: abort task handle
     {
         let mut handles = state.task_handles.lock().await;
-        if let Some(handle) = handles.remove(&id) {
+        if let Some(handle) = handles.remove(&args.id) {
             handle.abort();
         }
     }
 
-    if auto_start {
+    if args.auto_start {
         spawn_command_task(
             app_handle,
-            id,
-            interval_secs,
+            args.id,
+            args.interval_secs,
             Arc::clone(&state.commands),
             Arc::clone(&state.execution_states),
             Arc::clone(&state.task_handles),
@@ -243,7 +279,10 @@ pub async fn edit_command(
 }
 
 #[tauri::command]
-pub async fn quit_app(state: tauri::State<'_, AppState>, _app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn quit_app(
+    state: tauri::State<'_, AppState>,
+    _app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     let pids: Vec<u32> = {
         let states = state.execution_states.lock().await;
         states.values().filter_map(|s| s.child_pid).collect()
@@ -275,7 +314,9 @@ pub async fn clear_logs(id: String, state: tauri::State<'_, AppState>) -> Result
 /// Pull-based query for the current tampering state. The frontend calls this on mount
 /// to avoid missing the push event if it fires before listeners are registered.
 #[tauri::command]
-pub async fn get_tampering_state(state: tauri::State<'_, AppState>) -> Result<Vec<TamperedCommandInfo>, String> {
+pub async fn get_tampering_state(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<TamperedCommandInfo>, String> {
     let tampered = state.tampered_commands.lock().await;
     Ok(tampered.clone())
 }
@@ -318,7 +359,9 @@ pub async fn resolve_tampering(
         // Collect only accepted auto-start commands (not the entire map)
         commands_to_start = cmds
             .iter()
-            .filter(|(id, cmd)| accepted_ids.contains(id) && cmd.auto_start && !cmd.actively_stopped)
+            .filter(|(id, cmd)| {
+                accepted_ids.contains(id) && cmd.auto_start && !cmd.actively_stopped
+            })
             .map(|(id, cmd)| (id.clone(), cmd.interval_secs))
             .collect();
     }

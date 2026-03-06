@@ -71,12 +71,13 @@ pub fn run() {
                     }
                     _ => {}
                 })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
                         ..
-                    } => {
+                    } = event
+                    {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             if window.is_visible().unwrap_or(false) {
@@ -88,7 +89,6 @@ pub fn run() {
                             show_window(app);
                         }
                     }
-                    _ => {}
                 })
                 .build(app)?;
 
@@ -106,8 +106,8 @@ pub fn run() {
                     // Since this is the tampered state, we have no prior baseline in memory yet,
                     // so all commands in the tampered file are considered suspicious.
                     let tampered_info: Vec<TamperedCommandInfo> = tampered_cmds
-                        .iter()
-                        .map(|(_, cmd)| TamperedCommandInfo {
+                        .values()
+                        .map(|cmd| TamperedCommandInfo {
                             id: cmd.id.clone(),
                             name: cmd.name.clone(),
                             command_str: cmd.command_str.clone(),
