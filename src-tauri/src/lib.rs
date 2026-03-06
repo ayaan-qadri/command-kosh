@@ -205,14 +205,31 @@ fn show_window(app: &tauri::AppHandle) {
         let _ = window.unminimize();
         let _ = window.set_focus();
     } else {
-        let _ = tauri::WebviewWindowBuilder::new(
+        let builder = tauri::WebviewWindowBuilder::new(
             app,
             "main",
             tauri::WebviewUrl::App("index.html".into())
         )
         .title("Command Kosh")
         .inner_size(800.0, 600.0)
-        .center()
-        .build();
+        .center();
+
+        // Set the window icon from the app's default icon
+        let builder = match app.default_window_icon() {
+            Some(icon) => builder.icon(icon.clone()).unwrap_or_else(|_| {
+                // If icon setting fails, create a fresh builder without icon
+                tauri::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::App("index.html".into())
+                )
+                .title("Command Kosh")
+                .inner_size(800.0, 600.0)
+                .center()
+            }),
+            None => builder,
+        };
+
+        let _ = builder.build();
     }
 }
