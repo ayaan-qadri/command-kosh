@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -43,7 +43,6 @@ pub struct CommandExecutionState {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ChangeType {
     Added,
-    Modified,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -58,8 +57,6 @@ pub struct AppState {
     pub commands: Arc<Mutex<HashMap<String, RegisteredCommand>>>,
     pub execution_states: Arc<Mutex<HashMap<String, CommandExecutionState>>>,
     pub task_handles: Arc<Mutex<HashMap<String, tauri::async_runtime::JoinHandle<()>>>>,
-    /// The trusted baseline of commands from the last successfully verified load.
-    pub trusted_baseline: Arc<Mutex<HashMap<String, RegisteredCommand>>>,
     /// List of commands detected as tampered. Non-empty means tampering was detected.
     pub tampered_commands: Arc<Mutex<Vec<TamperedCommandInfo>>>,
 }

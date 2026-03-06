@@ -1,8 +1,8 @@
-pub mod models;
-pub mod store;
-pub mod scheduler;
-pub mod commands;
-pub mod integrity;
+mod models;
+mod store;
+mod scheduler;
+mod commands;
+mod integrity;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -126,12 +126,7 @@ pub fn run() {
                 states_map.insert(id.clone(), CommandExecutionState::default());
             }
 
-            // Cache the trusted baseline: only if commands are verified valid
-            let trusted_baseline = if !tampering_detected {
-                commands.clone()
-            } else {
-                HashMap::new() // No trusted baseline when tampered
-            };
+
 
             let commands_ref = Arc::new(Mutex::new(commands.clone()));
             let states_ref = Arc::new(Mutex::new(states_map));
@@ -150,7 +145,6 @@ pub fn run() {
                 commands: commands_ref,
                 execution_states: states_ref,
                 task_handles: handles_ref,
-                trusted_baseline: Arc::new(Mutex::new(trusted_baseline)),
                 tampered_commands: Arc::new(Mutex::new(tampered_list)),
             };
             app.manage(app_state);

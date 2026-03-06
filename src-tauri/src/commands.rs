@@ -41,9 +41,6 @@ pub async fn register_command(
         let mut states = state.execution_states.lock().await;
         states.insert(id.clone(), CommandExecutionState::default());
         save_commands(&app_handle, &cmds).await;
-        // Update trusted baseline
-        let mut baseline = state.trusted_baseline.lock().await;
-        baseline.insert(id.clone(), new_cmd.clone());
     }
 
     let commands_ref = Arc::clone(&state.commands);
@@ -89,7 +86,7 @@ pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_h
         }
     }
 
-    // Lock order: commands → execution_states → trusted_baseline
+    // Lock order: commands → execution_states
     let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
@@ -99,9 +96,6 @@ pub async fn delete_command(id: String, state: tauri::State<'_, AppState>, app_h
         let mut states = state.execution_states.lock().await;
         pid_to_kill = states.get(&id).and_then(|st| st.child_pid);
         states.remove(&id);
-
-        let mut baseline = state.trusted_baseline.lock().await;
-        baseline.remove(&id);
     }
 
     if let Some(pid) = pid_to_kill {
@@ -121,7 +115,7 @@ pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_han
         }
     }
 
-    // Lock order: commands → execution_states → trusted_baseline
+    // Lock order: commands → execution_states
     let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
@@ -141,11 +135,6 @@ pub async fn stop_command(id: String, state: tauri::State<'_, AppState>, app_han
         } else {
             None
         };
-
-        let mut baseline = state.trusted_baseline.lock().await;
-        if let Some(cmd) = baseline.get_mut(&id) {
-            cmd.actively_stopped = true;
-        }
     }
 
     if let Some(pid) = pid_to_kill {
@@ -165,18 +154,13 @@ pub async fn start_command(id: String, state: tauri::State<'_, AppState>, app_ha
         }
     }
 
-    // Lock order: commands → trusted_baseline (execution_states not needed here)
+    // Lock order: commands
     let cmd = {
         let mut cmds = state.commands.lock().await;
         if let Some(cmd) = cmds.get_mut(&id) {
             cmd.actively_stopped = false;
         }
         save_commands(&app_handle, &cmds).await;
-
-        let mut baseline = state.trusted_baseline.lock().await;
-        if let Some(cmd) = baseline.get_mut(&id) {
-            cmd.actively_stopped = false;
-        }
 
         cmds.get(&id).cloned()
     };
@@ -210,7 +194,7 @@ pub async fn edit_command(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
-    // Lock order: commands → execution_states → trusted_baseline
+    // Lock order: commands → execution_states
     let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
@@ -231,11 +215,6 @@ pub async fn edit_command(
 
         let states = state.execution_states.lock().await;
         pid_to_kill = states.get(&id).and_then(|st| st.child_pid);
-
-        let mut baseline = state.trusted_baseline.lock().await;
-        if let Some(cmd) = cmds.get(&id) {
-            baseline.insert(id.clone(), cmd.clone());
-        }
     }
 
     if let Some(pid) = pid_to_kill {
@@ -319,7 +298,7 @@ pub async fn resolve_tampering(
         tampered.iter().map(|t| t.id.clone()).collect()
     };
 
-    // Lock order: commands → execution_states → trusted_baseline
+    // Lock order: commands → execution_states
     let commands_to_start: Vec<(String, u64)>;
     {
         let mut cmds = state.commands.lock().await;
@@ -335,10 +314,6 @@ pub async fn resolve_tampering(
 
         // Re-sign the commands file
         save_commands(&app_handle, &cmds).await;
-
-        // Update the trusted baseline with the now-verified commands
-        let mut baseline = state.trusted_baseline.lock().await;
-        *baseline = cmds.clone();
 
         // Collect only accepted auto-start commands (not the entire map)
         commands_to_start = cmds
