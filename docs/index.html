@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Kosh | The vault for your terminal</title>
+    <meta name="description"
+        content="A lightweight, secure vault for your terminal workflows. Built with Rust and Tauri.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+
+<body>
+    <div class="glow"></div>
+
+    <nav>
+        <div class="logo">
+            <img src="assets/favicon.png" alt="Command Kosh Logo">
+            <span>Command Kosh</span>
+        </div>
+        <div class="nav-links">
+            <a href="https://github.com/ayaan-qadri/command-kosh/issues/new?title=Feature+Request%3A+&body=Please+provide+details+about+your+feature+request+here."
+                target="_blank" rel="noopener">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-lightbulb-icon lucide-lightbulb">
+                    <path
+                        d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                    <path d="M9 18h6" />
+                    <path d="M10 22h4" />
+                </svg>
+                Request for feature
+            </a>
+            <a href="https://github.com/ayaan-qadri/command-kosh#readme" target="_blank" rel="noopener">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-book-open-icon lucide-book-open">
+                    <path d="M12 7v14" />
+                    <path
+                        d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                </svg>
+                README
+            </a>
+        </div>
+    </nav>
+    <main class="container">
+        <header class="hero">
+            <h1 class="animate-fade-in delay-1">
+                Execute commands <br> <span class="text-accent">without the terminal.</span>
+            </h1>
+
+            <p class="animate-fade-in delay-2">
+                Command Kosh is a lightweight vault for your terminal commands. Built with Rust & Tauri.
+                Run them directly from the UI or schedule them to run automatically in the background.
+            </p>
+            <div class="download-link animate-fade-in delay-3">
+                <a href="https://github.com/ayaan-qadri/command-kosh/releases/latest" id="download-btn"
+                    class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-download-icon lucide-download">
+                        <path d="M12 15V3" />
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <path d="m7 10 5 5 5-5" />
+                    </svg>
+                    <span id="os-name">Download</span>
+                </a>
+                <br>
+                <a href="https://github.com/ayaan-qadri/command-kosh/releases" class="sub-link">View all platforms
+                    &rarr;</a>
+            </div>
+        </header>
+        <div class="mockup-wrapper animate-fade-in delay-3">
+            <div class="mockup-inner">
+                <img src="assets/home.png" alt="Command Kosh Dashboard">
+            </div>
+        </div>
+        <div class="features-container">
+            <div class="feature-row">
+                <div class="feature-text">
+                    <h2>Visual Runner</h2>
+                    <p>Monitor real-time output and status directly within the interface. Start, stop, or restart any
+                        command without having to spawn a shell window manually.</p>
+                </div>
+                <div class="feature-img">
+                    <img src="assets/command-details.png" alt="Visual Runner">
+                </div>
+            </div>
+            <div class="feature-row">
+                <div class="feature-text">
+                    <h2>Workflow Automation</h2>
+                    <p>Easily add, edit, or schedule commands to run automatically. You no longer need to rely on
+                        scattered scheduled tasks or loose scripts lying around in folders.</p>
+                </div>
+                <div class="feature-img swapper">
+                    <img src="assets/command-edit-form.png" alt="Edit Command Configuration">
+                    <img src="assets/command-edit-form2.png" alt="Command Editor Screen" class="swap-over">
+                    <div class="flash-overlay"></div>
+                </div>
+            </div>
+            <div class="feature-row">
+                <div class="feature-text">
+                    <h2>OS-Level Security</h2>
+                    <p>Every command is verified via HMAC-SHA256 signatures before execution. If a command is modified
+                        externally by bad actors, the app flags it immediately.</p>
+                </div>
+                <div class="feature-img">
+                    <img src="assets/security-review.png" alt="Security Review">
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="assets/favicon.png" alt="Logo">
+                Command Kosh
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/ayaan-qadri/command-kosh">Repository</a>
+                <a href="https://github.com/ayaan-qadri/command-kosh/issues">Report an Issue</a>
+                <a href="https://github.com/ayaan-qadri/command-kosh/blob/master/LICENSE">License</a>
+            </div>
+            <div class="copyright" id="copyright">&copy; Command Kosh. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <div id="image-modal" class="modal">
+        <span class="close-modal">&times;</span>
+        <button class="modal-nav prev-modal" id="prev-btn">&#10094;</button>
+        <button class="modal-nav next-modal" id="next-btn">&#10095;</button>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
