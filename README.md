@@ -106,17 +106,17 @@ If you find a bug or have an idea for a new feature, feel free to open an issue.
 ## Screenshots
 
 **Command Vault**
-<img src="repo-assets/home.png" />
+<img src="docs/assets/home.png" />
 
 **Command Output**
-<img src="repo-assets/command-details.png" />
+<img src="docs/assets/command-details.png" />
 
 **Add / Editing a Command**
 
-<img src="repo-assets/command-edit-form.png" />
-<img src="repo-assets/command-edit-form2.png" />
+<img src="docs/assets/command-edit-form.png" />
+<img src="docs/assets/command-edit-form2.png" />
 
 **External Command Detection**
-<img src="repo-assets/security-review.png" />
+<img src="docs/assets/security-review.png" />
 
 ---
