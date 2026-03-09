@@ -3,6 +3,15 @@
   "productName": "Command Kosh",
   "version": "0.1.0",
   "identifier": "com.ayaan.command-kosh",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU0NDY3RjM2MEZGQzFERkQKUldUOUhmd1BObjlHVkZPN0dEbCtIWCt5RGRlaGhzaGF0bXArMDJURkE2WWlvTGZhTDdTWXpiOHkK",
+      "endpoints": [
+        "https://github.com/ayaan-qadri/command-kosh/releases/latest/download/latest.json"
+      ],
+      "dialog": false
+    }
+  },
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -24,6 +33,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",

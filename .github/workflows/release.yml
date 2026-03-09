@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   release:
@@ -58,10 +59,12 @@ jobs:
         uses: tauri-apps/tauri-action@v0.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v${{ steps.pkg_version.outputs.version }}
           releaseName: 'Command Kosh v${{ steps.pkg_version.outputs.version }}'
-          releaseBody: '🚢 Automated release from master branch.'
+          releaseBody: 'Automated release from the master branch.'
           releaseDraft: true
           prerelease: false
           generateReleaseNotes: true

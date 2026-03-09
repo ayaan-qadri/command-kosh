@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Command Kosh | The vault for your terminal</title>
     <meta name="description"
-        content="A lightweight, secure vault for your terminal workflows. Built with Rust and Tauri.">
+        content="Store, run, and schedule your terminal commands from one lightweight desktop app. Built with Rust and Tauri.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -52,12 +52,12 @@
     <main class="container">
         <header class="hero">
             <h1 class="animate-fade-in delay-1">
-                Execute commands <br> <span class="text-accent">without the terminal.</span>
+                Stop hunting for commands. <br> <span class="text-accent">Start running them with confidence.</span>
             </h1>
 
             <p class="animate-fade-in delay-2">
-                Command Kosh is a lightweight vault for your terminal commands. Built with Rust & Tauri.
-                Run them directly from the UI or schedule them to run automatically in the background.
+                Command Kosh gives your repeated terminal work a real home. Store the commands you never want to
+                forget, run them from the UI when needed, or schedule them quietly in the background.
             </p>
             <div class="download-link animate-fade-in delay-3">
                 <a href="https://github.com/ayaan-qadri/command-kosh/releases/latest" id="download-btn"
@@ -107,8 +107,9 @@
             <div class="feature-row">
                 <div class="feature-text">
                     <h2>OS-Level Security</h2>
-                    <p>Every command is verified via HMAC-SHA256 signatures before execution. If a command is modified
-                        externally by bad actors, the app flags it immediately.</p>
+                    <p>Your commands stay on your machine, and every save is checked with HMAC-SHA256 integrity
+                        verification before execution. If a command is modified externally, Command Kosh flags it
+                        before it can quietly run in the background.</p>
                 </div>
                 <div class="feature-img">
                     <img src="assets/security-review.png" alt="Security Review">

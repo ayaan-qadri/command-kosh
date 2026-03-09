@@ -4,6 +4,7 @@ import { CommandForm } from "./components/CommandForm";
 import { CommandList } from "./components/CommandList";
 import { AutostartBanner } from "./components/AutostartBanner";
 import { QuitModal } from "./components/QuitModal";
+import { UpdaterBanner } from "./components/UpdaterBanner";
 
 export function CommandListPage() {
     const [showForm, setShowForm] = useState(false);
@@ -46,6 +47,8 @@ export function CommandListPage() {
 
             <main className="flex-1 p-6 z-0 relative">
                 <div className="max-w-4xl mx-auto space-y-6">
+                    <UpdaterBanner />
+
                     {showForm && (
                         <CommandForm
                             onSuccess={() => setShowForm(false)}
