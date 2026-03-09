@@ -2,16 +2,35 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import semver from 'semver';
-import { Select } from 'enquirer';
+import enquirer from 'enquirer';
+const { Select } = enquirer;
 
 async function bump() {
+    const trackedFiles = [
+        'package.json',
+        'src-tauri/tauri.conf.json',
+        'src-tauri/Cargo.toml'
+    ];
+    const originalContents = new Map();
+
     try {
         const packageJsonPath = path.resolve(process.cwd(), 'package.json');
         const tauriConfPath = path.resolve(process.cwd(), 'src-tauri/tauri.conf.json');
         const cargoTomlPath = path.resolve(process.cwd(), 'src-tauri/Cargo.toml');
+        const currentBranch = execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
+        const dirtyFiles = execSync(`git status --porcelain -- ${trackedFiles.join(' ')}`, { encoding: 'utf-8' }).trim();
+
+        if (dirtyFiles) {
+            throw new Error(
+                'Version files already have local changes. Please commit or stash package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml before running the release script.'
+            );
+        }
 
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
         const currentVersion = packageJson.version;
+        originalContents.set(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+        originalContents.set(tauriConfPath, fs.readFileSync(tauriConfPath, 'utf-8'));
+        originalContents.set(cargoTomlPath, fs.readFileSync(cargoTomlPath, 'utf-8'));
 
         console.log(`Current version: ${currentVersion}`);
 
@@ -44,27 +63,28 @@ async function bump() {
 
         // 4. Git operations
         console.log('Committing changes...');
-        execSync(`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml`);
-        execSync(`git commit -m "chore: bump version to v${newVersion}"`);
+        execSync(`git add ${trackedFiles.join(' ')}`, { stdio: 'inherit' });
+        execSync(`git commit -m "chore: bump version to v${newVersion}"`, { stdio: 'inherit' });
 
         console.log(`\n🎉 Success! Version bumped locally.`);
         console.log(`Next steps:`);
-        console.log(`1. git push origin main`);
-        console.log(`2. Create a PR from 'main' to 'master' on GitHub.`);
-        console.log(`3. Merge the PR to trigger the automated release build.`);
+        if (currentBranch === 'master') {
+            console.log(`1. git push origin master`);
+            console.log(`2. The push to 'master' will trigger the automated release workflow.`);
+        } else {
+            console.log(`1. git push origin ${currentBranch}`);
+            console.log(`2. Open a PR from '${currentBranch}' to 'master'.`);
+            console.log(`3. Merge the PR to trigger the automated release workflow.`);
+        }
 
     } catch (error) {
         console.error('\n❌ Release failed:', error.message);
-        console.log('Attempting to rollback changes...');
-        try {
-            // Revert any changes to the version files
-            execSync('git checkout -- package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml', { stdio: 'ignore' });
-            console.log('✅ Changes to version files reverted.');
-
-            // If we already staged files, unstage them
-            execSync('git reset HEAD package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml', { stdio: 'ignore' });
-        } catch (rollbackError) {
-            console.warn('⚠️ Manual cleanup might be required. Run "git status" to check.');
+        if (originalContents.size > 0) {
+            console.log('Restoring version files...');
+            for (const [filePath, content] of originalContents.entries()) {
+                fs.writeFileSync(filePath, content);
+            }
+            console.log('✅ Version files restored.');
         }
         process.exit(1);
     }

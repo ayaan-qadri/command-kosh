@@ -3,7 +3,7 @@
   <br/>
   <strong style="font-size: 2em;">Command Kosh</strong>
   <br/>
-  <p>A vault for your terminal commands and automate it</p>
+  <p>A vault for your terminal commands, with built-in automation</p>
 </div>
 
 ---
@@ -50,9 +50,11 @@ The scheduling feature specifically came out of a real need. The goal was to hav
 
 Command Kosh is built with [Tauri](https://tauri.app/) because you know we developers care about memory consumption by software and it was the best fit for this project :) 
 
-It was built in almost 15 days, after office hours and weekends, with the help of AI and almost no prior Rust experience.
+It was built over roughly 15 days of evenings, nights, and weekends, with AI support and almost no prior Rust experience.
 
 ### Security and Storage
+
+Command Kosh stores your commands locally on your machine and does not rely on a backend service for its core functionality. The app may still make network requests for Command Kosh update checks, and any saved command can access the network if that command itself does so.
 
 Every save generates an HMAC-SHA256 signature stored in a separate `.sig` file. The signing key is kept in your OS's native keyring, never on disk as a plain file. On every launch, the app verifies the command file against the signature and blocks execution if anything doesn't match.
 
