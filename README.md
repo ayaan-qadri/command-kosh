@@ -50,7 +50,7 @@ The scheduling feature specifically came out of a real need. The goal was to hav
 
 Command Kosh is built with [Tauri](https://tauri.app/) because you know we developers care about memory consumption by software and it was the best fit for this project :) 
 
-It was built over roughly 15 days of evenings, nights, and weekends, with AI support and almost no prior Rust experience.
+It was built over roughly 18 days of evenings, nights, and weekends, with AI support and almost no prior Rust experience.
 
 ### Security and Storage
 

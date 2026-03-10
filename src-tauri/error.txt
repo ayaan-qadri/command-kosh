@@ -1,9 +1,0 @@
-    Checking tauri-app v0.1.0 (C:\Users\ayaan\Desktop\my\command-kosh\src-tauri)
-error[E0063]: missing field `actively_stopped` in initializer of `RegisteredCommand`
-  --> src\commands.rs:17:19
-   |
-17 |     let new_cmd = RegisteredCommand {
-   |                   ^^^^^^^^^^^^^^^^^ missing `actively_stopped`
-
-For more information about this error, try `rustc --explain E0063`.
-error: could not compile `tauri-app` (lib) due to 1 previous error
