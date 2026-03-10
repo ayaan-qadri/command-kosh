@@ -1,6 +1,6 @@
 [package]
 name = "command-kosh"
-version = "0.1.0"
+version = "1.0.0"
 description = "Command Kosh App"
 authors = ["Ayaan"]
 edition = "2021"
