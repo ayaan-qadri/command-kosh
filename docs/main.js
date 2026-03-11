@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function getOS() {
         const ua = navigator.userAgent.toLowerCase();
+
+        if (ua.includes('android') || ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod'))
+            return 'Generic';
+
+
         if (ua.includes('win')) return 'Windows';
         if (ua.includes('mac') || ua.includes('darwin')) return 'macOS';
         if (ua.includes('linux')) return 'Linux';
