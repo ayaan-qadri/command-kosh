@@ -95,13 +95,9 @@ This opens the Command Kosh window with live reloading enabled. Any changes you 
 
 ## Contributing
 
-Contributions are welcome, especially around macOS and Linux support. To get started:
+Contributions are welcome, especially around macOS and Linux support. Please read our [Contributing Guide](CONTRIBUTING.md) to get started.
 
-1. Fork the repository.
-2. Make your changes in your fork.
-3. Open a Pull Request for review.
-
-If you find a bug or have an idea for a new feature, feel free to open an issue. Thanks for checking out Command Kosh.
+If you find a bug or have an idea for a new feature, feel free to [open an issue](https://github.com/ayaan-qadri/command-kosh/issues). Thanks for checking out Command Kosh.
 
 ---
 
