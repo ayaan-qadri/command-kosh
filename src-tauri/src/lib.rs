@@ -1,3 +1,4 @@
+mod cli_setup;
 mod commands;
 pub mod integrity;
 pub mod models;
@@ -158,6 +159,11 @@ pub fn run() {
                 tampered_commands: Arc::new(Mutex::new(tampered_list)),
             };
             app.manage(app_state);
+
+            // Setup CLI PATH asynchronously to not block the app launch
+            tauri::async_runtime::spawn_blocking(|| {
+                cli_setup::ensure_cli_in_path();
+            });
 
             // --- Show window logic ---
             let args: Vec<String> = std::env::args().collect();
