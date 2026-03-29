@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { TerminalSquare, Clock, Calendar, MousePointerClick, Zap } from "lucide-react";
+import { TerminalSquare, Clock, Calendar, MousePointerClick, Zap, AlertCircle } from "lucide-react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { useState } from "react";
 
 const input = "w-full bg-zinc-950/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-zinc-100 text-sm focus:outline-none focus:border-teal-500/60 focus:bg-zinc-950 transition-colors placeholder:text-zinc-600";
 const label = "block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide";
@@ -80,6 +81,11 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
         },
     });
 
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const nameValue = watch("name");
+    const hasSpace = nameValue?.includes(" ");
+
     const scheduleType = watch("scheduleType");
     const autoRestartOnFail = watch("autoRestartOnFail");
     const autoStart = watch("autoStart");
@@ -97,7 +103,7 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
         }
         invoke("register_command", {
             args: {
-                name: data.name,
+                name: data.name.trim().replace(/\s+/g, "_"),
                 command_str: data.commandStr,
                 interval_secs: interval,
                 run_at_secs: runAt,
@@ -108,8 +114,8 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                 auto_restart_retries: parseInt(data.autoRestartRetries) || 0,
                 auto_run_on_complete: data.autoRunOnComplete,
             }
-        }).then(() => { reset(); onSuccess(); })
-            .catch((e) => console.error("Failed to register command:", e));
+        }).then(() => { setSubmitError(null); reset(); onSuccess(); })
+            .catch((e) => setSubmitError(typeof e === "string" ? e : String(e)));
     };
 
     const scheduleOptions = [
@@ -137,6 +143,12 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                     <div>
                         <label className={label}>Name</label>
                         <input type="text" placeholder="e.g. Daily Backup" className={input} {...register("name", { required: true })} />
+                        {hasSpace && (
+                            <p className="text-[11px] text-amber-500/90 mt-1.5 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Spaces will be converted to underscores ('_')
+                            </p>
+                        )}
                     </div>
                     <div>
                         <label className={label}>Command</label>
@@ -204,6 +216,14 @@ export function CommandForm({ onSuccess }: CommandFormProps) {
                     <ToggleRow id="autoRunOnComplete" checked={autoRunOnComplete} onChange={() => setValue("autoRunOnComplete", !autoRunOnComplete)} color="blue"
                         title="Loop on completion" description="Re-run immediately after each successful completion" />
                 </Section>
+
+                {/* Error */}
+                {submitError && (
+                    <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+                        <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-300">{submitError}</p>
+                    </div>
+                )}
 
                 {/* Submit */}
                 <button
