@@ -42,6 +42,23 @@ pub async fn register_command(
 
     {
         let mut cmds = state.commands.lock().await;
+
+        let name_lower = new_cmd.name.to_lowercase();
+        let reserved_names = ["list", "ls", "help", "--help", "-help", "-h", "version", "--version", "-version", "-v"];
+        if reserved_names.contains(&name_lower.as_str()) {
+            return Err(format!("'{}' is a reserved CLI keyword. Please choose a different command name.", new_cmd.name));
+        }
+
+        // Enforce unique command names (case-insensitive)
+        for existing in cmds.values() {
+            if existing.name.to_lowercase() == name_lower {
+                return Err(format!(
+                    "A command named '{}' already exists. Command names must be unique.",
+                    existing.name
+                ));
+            }
+        }
+
         cmds.insert(id.clone(), new_cmd.clone());
         let mut states = state.execution_states.lock().await;
         states.insert(id.clone(), CommandExecutionState::default());
@@ -234,6 +251,23 @@ pub async fn edit_command(
     let pid_to_kill;
     {
         let mut cmds = state.commands.lock().await;
+
+        let name_lower = args.name.to_lowercase();
+        let reserved_names = ["list", "ls", "help", "--help", "-help", "-h", "version", "--version", "-version", "-v"];
+        if reserved_names.contains(&name_lower.as_str()) {
+            return Err(format!("'{}' is a reserved CLI keyword. Please choose a different command name.", args.name));
+        }
+
+        // Enforce unique command names (case-insensitive), excluding the command being edited
+        for (existing_id, existing) in cmds.iter() {
+            if existing_id != &args.id && existing.name.to_lowercase() == name_lower {
+                return Err(format!(
+                    "A command named '{}' already exists. Command names must be unique.",
+                    existing.name
+                ));
+            }
+        }
+
         if let Some(cmd) = cmds.get_mut(&args.id) {
             cmd.name = args.name;
             cmd.command_str = args.command_str;
