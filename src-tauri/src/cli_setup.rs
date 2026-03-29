@@ -70,7 +70,7 @@ fn add_to_unix_path(target_dir: &std::path::Path) {
 
         if fs::create_dir_all(&local_bin).is_ok() {
             let link_path = local_bin.join("ck");
-            
+
             let needs_link = match fs::read_link(&link_path) {
                 Ok(target) => target != ck_bin,
                 Err(_) => true,

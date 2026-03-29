@@ -59,15 +59,15 @@ Have an idea? [Open a feature request](https://github.com/ayaan-qadri/command-ko
 
 We loosely follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-| Prefix | Purpose |
-|--------|---------|
-| `feat:` | New feature |
-| `fix:` | Bug fix |
-| `docs:` | Documentation changes |
-| `style:` | Code style (formatting, no logic change) |
-| `refactor:` | Code refactoring |
-| `test:` | Adding or updating tests |
-| `chore:` | Maintenance tasks |
+| Prefix      | Purpose                                  |
+| ----------- | ---------------------------------------- |
+| `feat:`     | New feature                              |
+| `fix:`      | Bug fix                                  |
+| `docs:`     | Documentation changes                    |
+| `style:`    | Code style (formatting, no logic change) |
+| `refactor:` | Code refactoring                         |
+| `test:`     | Adding or updating tests                 |
+| `chore:`    | Maintenance tasks                        |
 
 ## Development Setup
 
@@ -90,7 +90,6 @@ npm install
 # Run in development mode
 npm run tauri dev
 ```
-
 
 ## Getting Help
 

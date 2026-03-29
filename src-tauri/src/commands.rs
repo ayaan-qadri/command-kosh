@@ -44,9 +44,23 @@ pub async fn register_command(
         let mut cmds = state.commands.lock().await;
 
         let name_lower = new_cmd.name.to_lowercase();
-        let reserved_names = ["list", "ls", "help", "--help", "-help", "-h", "version", "--version", "-version", "-v"];
+        let reserved_names = [
+            "list",
+            "ls",
+            "help",
+            "--help",
+            "-help",
+            "-h",
+            "version",
+            "--version",
+            "-version",
+            "-v",
+        ];
         if reserved_names.contains(&name_lower.as_str()) {
-            return Err(format!("'{}' is a reserved CLI keyword. Please choose a different command name.", new_cmd.name));
+            return Err(format!(
+                "'{}' is a reserved CLI keyword. Please choose a different command name.",
+                new_cmd.name
+            ));
         }
 
         // Enforce unique command names (case-insensitive)
@@ -253,9 +267,23 @@ pub async fn edit_command(
         let mut cmds = state.commands.lock().await;
 
         let name_lower = args.name.to_lowercase();
-        let reserved_names = ["list", "ls", "help", "--help", "-help", "-h", "version", "--version", "-version", "-v"];
+        let reserved_names = [
+            "list",
+            "ls",
+            "help",
+            "--help",
+            "-help",
+            "-h",
+            "version",
+            "--version",
+            "-version",
+            "-v",
+        ];
         if reserved_names.contains(&name_lower.as_str()) {
-            return Err(format!("'{}' is a reserved CLI keyword. Please choose a different command name.", args.name));
+            return Err(format!(
+                "'{}' is a reserved CLI keyword. Please choose a different command name.",
+                args.name
+            ));
         }
 
         // Enforce unique command names (case-insensitive), excluding the command being edited

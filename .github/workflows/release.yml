@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -63,8 +63,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v${{ steps.pkg_version.outputs.version }}
-          releaseName: 'Command Kosh v${{ steps.pkg_version.outputs.version }}'
-          releaseBody: 'Automated release from the master branch.'
+          releaseName: "Command Kosh v${{ steps.pkg_version.outputs.version }}"
+          releaseBody: "Automated release from the master branch."
           releaseDraft: true
           prerelease: false
           generateReleaseNotes: true

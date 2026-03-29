@@ -181,4 +181,3 @@ pub async fn verify_and_load(app_handle: &tauri::AppHandle) -> VerifyResult {
         VerifyResult::Tampered(commands)
     }
 }
-
