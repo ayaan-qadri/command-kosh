@@ -1,13 +1,13 @@
+use crate::models::{CommandExecutionState, RegisteredCommand};
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::Emitter;
+use tauri_plugin_notification::NotificationExt;
 use tokio::io::AsyncBufReadExt;
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
-use tauri::Emitter;
-use tauri_plugin_notification::NotificationExt;
-use crate::models::{CommandExecutionState, RegisteredCommand};
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -89,7 +89,11 @@ pub fn spawn_command_task(
                     builder
                 };
 
-                command_builder.stdout(Stdio::piped()).stderr(Stdio::piped()).stdin(Stdio::null()).kill_on_drop(true);
+                command_builder
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .stdin(Stdio::null())
+                    .kill_on_drop(true);
 
                 let mut retry_immediately = false;
 
@@ -143,9 +147,14 @@ pub fn spawn_command_task(
                             if success {
                                 fail_retry_count = 0;
                                 if cmd.notify_on_success {
-                                    let _ = app_handle.notification().builder()
+                                    let _ = app_handle
+                                        .notification()
+                                        .builder()
                                         .title("Command Success")
-                                        .body(format!("Command '{}' executed successfully.", cmd.name))
+                                        .body(format!(
+                                            "Command '{}' executed successfully.",
+                                            cmd.name
+                                        ))
                                         .show();
                                 }
                                 if cmd.auto_run_on_complete {
@@ -153,12 +162,19 @@ pub fn spawn_command_task(
                                 }
                             } else {
                                 if cmd.notify_on_failure {
-                                    let _ = app_handle.notification().builder()
+                                    let _ = app_handle
+                                        .notification()
+                                        .builder()
                                         .title("Command Failed")
-                                        .body(format!("Command '{}' failed with exit code: {}", cmd.name, exit_status))
+                                        .body(format!(
+                                            "Command '{}' failed with exit code: {}",
+                                            cmd.name, exit_status
+                                        ))
                                         .show();
                                 }
-                                if cmd.auto_restart_on_fail && fail_retry_count < cmd.auto_restart_retries {
+                                if cmd.auto_restart_on_fail
+                                    && fail_retry_count < cmd.auto_restart_retries
+                                {
                                     fail_retry_count += 1;
                                     retry_immediately = true;
                                 } else if cmd.auto_run_on_complete {
@@ -170,12 +186,19 @@ pub fn spawn_command_task(
                         }
                         Err(e) => {
                             if cmd.notify_on_failure {
-                                let _ = app_handle.notification().builder()
+                                let _ = app_handle
+                                    .notification()
+                                    .builder()
                                     .title("Command Error")
-                                    .body(format!("Command '{}' failed to execute: {}", cmd.name, e))
+                                    .body(format!(
+                                        "Command '{}' failed to execute: {}",
+                                        cmd.name, e
+                                    ))
                                     .show();
                             }
-                            if cmd.auto_restart_on_fail && fail_retry_count < cmd.auto_restart_retries {
+                            if cmd.auto_restart_on_fail
+                                && fail_retry_count < cmd.auto_restart_retries
+                            {
                                 fail_retry_count += 1;
                                 retry_immediately = true;
                             } else if cmd.auto_run_on_complete {
@@ -203,7 +226,11 @@ pub fn spawn_command_task(
             }
 
             if interval_secs > 0 {
-                let next_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + interval_secs;
+                let next_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    + interval_secs;
                 {
                     let mut st = states_ref.lock().await;
                     if let Some(s) = st.get_mut(&cmd_id) {

@@ -1,15 +1,15 @@
 :root {
-  --bg-dark: #0C1425;
+  --bg-dark: #0c1425;
   --bg-card: #131b2a;
-  --accent: #1ABC9C;
-  --accent-light: #3FF5ED;
-  --text-primary: #FFFFFF;
+  --accent: #1abc9c;
+  --accent-light: #3ff5ed;
+  --text-primary: #ffffff;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --border-color: rgba(255, 255, 255, 0.08);
   --glass: rgba(19, 27, 42, 0.6);
-  --font-main: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-main: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
 
 * {
@@ -29,7 +29,7 @@ body {
 }
 
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background-size: 40px 40px;
@@ -49,7 +49,11 @@ body::before {
   transform: translate(-50%, -50%);
   width: 60vw;
   height: 600px;
-  background: radial-gradient(ellipse at center, rgba(26, 188, 156, 0.15), transparent 60%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(26, 188, 156, 0.15),
+    transparent 60%
+  );
   pointer-events: none;
   z-index: -1;
 }
@@ -91,7 +95,9 @@ nav {
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0.4rem;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
   line-height: 0;
 }
 
@@ -428,9 +434,15 @@ footer {
   animation: fadeInUp 0.8s ease cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.delay-1 { animation-delay: 0.15s; }
-.delay-2 { animation-delay: 0.3s; }
-.delay-3 { animation-delay: 0.45s; }
+.delay-1 {
+  animation-delay: 0.15s;
+}
+.delay-2 {
+  animation-delay: 0.3s;
+}
+.delay-3 {
+  animation-delay: 0.45s;
+}
 
 /* ===== Image Modal ===== */
 
@@ -519,8 +531,12 @@ footer {
   transform: translateY(-50%) scale(1.1);
 }
 
-.prev-modal { left: 20px; }
-.next-modal { right: 20px; }
+.prev-modal {
+  left: 20px;
+}
+.next-modal {
+  right: 20px;
+}
 
 /* ===== Responsive: Tablet (≤768px) ===== */
 
@@ -558,7 +574,9 @@ footer {
     padding: 0.6rem 0.5rem;
     font-size: 0.9rem;
     border-radius: 8px;
-    transition: background 0.2s, color 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
 
   .nav-links a:hover {
@@ -660,8 +678,12 @@ footer {
     font-size: 1.2rem;
   }
 
-  .prev-modal { left: 8px; }
-  .next-modal { right: 8px; }
+  .prev-modal {
+    left: 8px;
+  }
+  .next-modal {
+    right: 8px;
+  }
 }
 
 /* ===== Responsive: Small phone (≤480px) ===== */
