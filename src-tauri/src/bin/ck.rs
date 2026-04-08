@@ -5,12 +5,7 @@ use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 
-// Minimal re-definition of RegisteredCommand (no Tauri dependency needed)
-#[derive(Debug, serde::Deserialize, Clone)]
-struct RegisteredCommand {
-    name: String,
-    command_str: String,
-}
+use command_kosh_lib::models::RegisteredCommand;
 
 const APP_IDENTIFIER: &str = "com.ayaan.command-kosh";
 
@@ -152,7 +147,7 @@ fn parse_args(args: &[String]) -> (String, HashMap<String, String>) {
         }
     }
 
-    (command_name_parts.join(" "), values)
+    (command_name_parts.join("_"), values)
 }
 
 fn execute_command(command_str: &str) -> i32 {
