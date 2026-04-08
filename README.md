@@ -12,6 +12,7 @@
 
 - [What is Command Kosh?](#what-is-command-kosh)
 - [Features](#features)
+- [The `ck` CLI](#the-ck-cli)
 - [How the Idea Came About](#how-the-idea-came-about)
 - [How It Was Built](#how-it-was-built)
 - [Platform Support](#platform-support)
@@ -36,7 +37,37 @@ Command Kosh is built with [Tauri](https://tauri.app/), which means it has a ver
 - **Command Vault:** Store all your commands and snippets in one place.
 - **One-Click Execution:** Run any stored command instantly through the built-in runner.
 - **Scheduling:** Set commands to run at fixed intervals automatically, without having to remember to do it yourself.
+- **`ck` CLI:** Run any stored command straight from the terminal. Supports template placeholders, auto-completion hints, and the same HMAC integrity checks as the desktop app.
 - **System Tray Mode:** Minimal resource usage. Close the window and the app keeps running quietly in the background as a lightweight Rust backend.
+
+## The `ck` CLI
+
+Command Kosh ships with `ck`, a companion CLI that lets you run stored commands directly from any terminal. It is bundled with the installer and auto-added to your PATH on first launch.
+
+### Usage
+
+```bash
+# Run a stored command
+ck deploy_staging
+
+# Pass template values (command: git reset --soft HEAD~{{count}} && git commit -m "{{msg}}")
+ck sq_commits count=3 msg="squashed"
+
+# List all stored commands
+ck list
+
+# Help
+ck --help
+```
+
+### How it works
+
+- `ck` reads the same `commands.json` file as the desktop app.
+- Before execution, it verifies HMAC-SHA256 integrity using the key stored in your OS keyring - the exact same verification the desktop app performs.
+- Commands with `{{placeholder}}` syntax will prompt you for missing values or accept them as `key=value` arguments.
+- If a command name is not found, `ck` will suggest similar names.
+
+---
 
 ## How the Idea Came About
 
@@ -116,5 +147,8 @@ If you find a bug or have an idea for a new feature, feel free to [open an issue
 
 **External Command Detection**
 <img src="docs/assets/security-review.png" />
+
+**`ck` CLI**
+<img src="docs/assets/ck.png" />
 
 ---
