@@ -8,80 +8,80 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TamperingReviewRouteImport } from './routes/tampering-review'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CommandDetailsCommandIdRouteImport } from './routes/command-details.$commandId'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as TamperingReviewRouteImport } from "./routes/tampering-review";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as CommandDetailsCommandIdRouteImport } from "./routes/command-details.$commandId";
 
 const TamperingReviewRoute = TamperingReviewRouteImport.update({
-  id: '/tampering-review',
-  path: '/tampering-review',
+  id: "/tampering-review",
+  path: "/tampering-review",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const CommandDetailsCommandIdRoute = CommandDetailsCommandIdRouteImport.update({
-  id: '/command-details/$commandId',
-  path: '/command-details/$commandId',
+  id: "/command-details/$commandId",
+  path: "/command-details/$commandId",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/tampering-review': typeof TamperingReviewRoute
-  '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
+  "/": typeof IndexRoute;
+  "/tampering-review": typeof TamperingReviewRoute;
+  "/command-details/$commandId": typeof CommandDetailsCommandIdRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/tampering-review': typeof TamperingReviewRoute
-  '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
+  "/": typeof IndexRoute;
+  "/tampering-review": typeof TamperingReviewRoute;
+  "/command-details/$commandId": typeof CommandDetailsCommandIdRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/tampering-review': typeof TamperingReviewRoute
-  '/command-details/$commandId': typeof CommandDetailsCommandIdRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/tampering-review": typeof TamperingReviewRoute;
+  "/command-details/$commandId": typeof CommandDetailsCommandIdRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tampering-review' | '/command-details/$commandId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/tampering-review' | '/command-details/$commandId'
-  id: '__root__' | '/' | '/tampering-review' | '/command-details/$commandId'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/tampering-review" | "/command-details/$commandId";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/tampering-review" | "/command-details/$commandId";
+  id: "__root__" | "/" | "/tampering-review" | "/command-details/$commandId";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  TamperingReviewRoute: typeof TamperingReviewRoute
-  CommandDetailsCommandIdRoute: typeof CommandDetailsCommandIdRoute
+  IndexRoute: typeof IndexRoute;
+  TamperingReviewRoute: typeof TamperingReviewRoute;
+  CommandDetailsCommandIdRoute: typeof CommandDetailsCommandIdRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/tampering-review': {
-      id: '/tampering-review'
-      path: '/tampering-review'
-      fullPath: '/tampering-review'
-      preLoaderRoute: typeof TamperingReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/command-details/$commandId': {
-      id: '/command-details/$commandId'
-      path: '/command-details/$commandId'
-      fullPath: '/command-details/$commandId'
-      preLoaderRoute: typeof CommandDetailsCommandIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/tampering-review": {
+      id: "/tampering-review";
+      path: "/tampering-review";
+      fullPath: "/tampering-review";
+      preLoaderRoute: typeof TamperingReviewRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/command-details/$commandId": {
+      id: "/command-details/$commandId";
+      path: "/command-details/$commandId";
+      fullPath: "/command-details/$commandId";
+      preLoaderRoute: typeof CommandDetailsCommandIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -89,7 +89,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TamperingReviewRoute: TamperingReviewRoute,
   CommandDetailsCommandIdRoute: CommandDetailsCommandIdRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
