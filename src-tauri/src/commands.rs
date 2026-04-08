@@ -4,6 +4,49 @@ use crate::store::save_commands;
 use std::sync::Arc;
 use uuid::Uuid;
 
+const RESERVED_NAMES: &[&str] = &[
+    "list",
+    "ls",
+    "help",
+    "--help",
+    "-help",
+    "-h",
+    "version",
+    "--version",
+    "-version",
+    "-v",
+];
+
+fn validate_not_reserved(name: &str) -> Result<(), String> {
+    if RESERVED_NAMES.contains(&name.to_lowercase().as_str()) {
+        return Err(format!(
+            "'{}' is a reserved CLI keyword. Please choose a different command name.",
+            name
+        ));
+    }
+    Ok(())
+}
+
+fn validate_unique_name(
+    name: &str,
+    cmds: &std::collections::HashMap<String, RegisteredCommand>,
+    exclude_id: Option<&str>,
+) -> Result<(), String> {
+    let name_lower = name.to_lowercase();
+    for (existing_id, existing) in cmds.iter() {
+        if Some(existing_id.as_str()) == exclude_id {
+            continue;
+        }
+        if existing.name.to_lowercase() == name_lower {
+            return Err(format!(
+                "A command named '{}' already exists. Command names must be unique.",
+                existing.name
+            ));
+        }
+    }
+    Ok(())
+}
+
 #[derive(serde::Deserialize)]
 pub struct CommandArgs {
     pub name: String,
@@ -43,35 +86,8 @@ pub async fn register_command(
     {
         let mut cmds = state.commands.lock().await;
 
-        let name_lower = new_cmd.name.to_lowercase();
-        let reserved_names = [
-            "list",
-            "ls",
-            "help",
-            "--help",
-            "-help",
-            "-h",
-            "version",
-            "--version",
-            "-version",
-            "-v",
-        ];
-        if reserved_names.contains(&name_lower.as_str()) {
-            return Err(format!(
-                "'{}' is a reserved CLI keyword. Please choose a different command name.",
-                new_cmd.name
-            ));
-        }
-
-        // Enforce unique command names (case-insensitive)
-        for existing in cmds.values() {
-            if existing.name.to_lowercase() == name_lower {
-                return Err(format!(
-                    "A command named '{}' already exists. Command names must be unique.",
-                    existing.name
-                ));
-            }
-        }
+        validate_not_reserved(&new_cmd.name)?;
+        validate_unique_name(&new_cmd.name, &cmds, None)?;
 
         cmds.insert(id.clone(), new_cmd.clone());
         let mut states = state.execution_states.lock().await;
@@ -266,35 +282,8 @@ pub async fn edit_command(
     {
         let mut cmds = state.commands.lock().await;
 
-        let name_lower = args.name.to_lowercase();
-        let reserved_names = [
-            "list",
-            "ls",
-            "help",
-            "--help",
-            "-help",
-            "-h",
-            "version",
-            "--version",
-            "-version",
-            "-v",
-        ];
-        if reserved_names.contains(&name_lower.as_str()) {
-            return Err(format!(
-                "'{}' is a reserved CLI keyword. Please choose a different command name.",
-                args.name
-            ));
-        }
-
-        // Enforce unique command names (case-insensitive), excluding the command being edited
-        for (existing_id, existing) in cmds.iter() {
-            if existing_id != &args.id && existing.name.to_lowercase() == name_lower {
-                return Err(format!(
-                    "A command named '{}' already exists. Command names must be unique.",
-                    existing.name
-                ));
-            }
-        }
+        validate_not_reserved(&args.name)?;
+        validate_unique_name(&args.name, &cmds, Some(&args.id))?;
 
         if let Some(cmd) = cmds.get_mut(&args.id) {
             cmd.name = args.name;
