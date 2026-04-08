@@ -19,18 +19,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+
       - name: Get version from package.json
         id: pkg_version
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -55,6 +55,27 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      # Tauri only lipo-merges the main binary for universal-apple-darwin, not
+      # extra [[bin]] targets. We pre-build and merge the ck CLI binary here so
+      # the bundler finds it at the expected universal path.
+      # npm run build is needed because cargo build compiles the lib which
+      # contains generate_context!() — this requires the frontend dist/ to exist.
+      # tauri-action will run it again via beforeBuildCommand, but Vite is a no-op.
+      - name: Build universal ck binary (macOS only)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          npm run build
+          cd src-tauri
+          cargo build --release --bin ck --target aarch64-apple-darwin
+          cargo build --release --bin ck --target x86_64-apple-darwin
+          strip target/aarch64-apple-darwin/release/ck
+          strip target/x86_64-apple-darwin/release/ck
+          mkdir -p target/universal-apple-darwin/release
+          lipo -create \
+            target/aarch64-apple-darwin/release/ck \
+            target/x86_64-apple-darwin/release/ck \
+            -output target/universal-apple-darwin/release/ck
+
       - name: Build and Release
         uses: tauri-apps/tauri-action@v0.6
         env:
@@ -64,7 +85,6 @@ jobs:
         with:
           tagName: v${{ steps.pkg_version.outputs.version }}
           releaseName: "Command Kosh v${{ steps.pkg_version.outputs.version }}"
-          releaseBody: "Automated release from the master branch."
           releaseDraft: true
           prerelease: false
           generateReleaseNotes: true
