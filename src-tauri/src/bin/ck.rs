@@ -215,7 +215,7 @@ fn print_usage() {
 fn list_commands(commands: &HashMap<String, RegisteredCommand>) {
     // Sort by name for consistent output
     let mut sorted: Vec<&RegisteredCommand> = commands.values().collect();
-    sorted.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    sorted.sort_by_key(|a| a.name.to_lowercase());
 
     if sorted.is_empty() {
         eprintln!("No commands stored. Open Command Kosh and add some commands first.");
