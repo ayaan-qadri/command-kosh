@@ -2,7 +2,6 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use std::collections::HashMap;
 use std::fs;
-use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 
 use command_kosh_lib::models::RegisteredCommand;
@@ -161,8 +160,8 @@ fn execute_command(command_str: &str) -> i32 {
         #[cfg(target_os = "windows")]
         cmd.raw_arg(command_str);
 
-        cmd.stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+        cmd.stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .stdin(Stdio::inherit());
         match cmd.spawn() {
             Ok(c) => c,
@@ -174,8 +173,8 @@ fn execute_command(command_str: &str) -> i32 {
     } else {
         let mut cmd = Command::new("sh");
         cmd.args(["-c", command_str]);
-        cmd.stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+        cmd.stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .stdin(Stdio::inherit());
         match cmd.spawn() {
             Ok(c) => c,
@@ -185,47 +184,6 @@ fn execute_command(command_str: &str) -> i32 {
             }
         }
     };
-
-    // Stream stdout and stderr in real-time, concurrently to prevent buffer deadlocks
-    let stream_pipe = |pipe: Option<Box<dyn std::io::Read + Send + 'static>>,
-                       is_stderr: bool|
-     -> Option<std::thread::JoinHandle<()>> {
-        pipe.map(|p| {
-            std::thread::spawn(move || {
-                // Read from either stderr or stdout pipe
-                let reader = BufReader::new(p);
-                for line in reader.lines().map_while(Result::ok) {
-                    if is_stderr {
-                        let _ = writeln!(std::io::stderr(), "{}", line);
-                    } else {
-                        let _ = writeln!(std::io::stdout(), "{}", line);
-                    }
-                }
-            })
-        })
-    };
-
-    let out_thread = stream_pipe(
-        child
-            .stdout
-            .take()
-            .map(|s| Box::new(s) as Box<dyn std::io::Read + Send + 'static>),
-        false,
-    );
-    let err_thread = stream_pipe(
-        child
-            .stderr
-            .take()
-            .map(|s| Box::new(s) as Box<dyn std::io::Read + Send + 'static>),
-        true,
-    );
-
-    if let Some(t) = out_thread {
-        let _ = t.join();
-    }
-    if let Some(t) = err_thread {
-        let _ = t.join();
-    }
 
     match child.wait() {
         Ok(status) => status.code().unwrap_or(1),
