@@ -15,7 +15,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { useNavigate } from "@tanstack/react-router";
-import { UpdaterBanner } from "./UpdaterBanner";
 
 interface CommandListProps {
   setShowAutostartBanner: (value: boolean) => void;
@@ -230,7 +229,6 @@ export function CommandList({ setShowAutostartBanner }: CommandListProps) {
 
   return (
     <>
-      <UpdaterBanner />
       <div className="flex items-center gap-3 mb-4">
         <h2 className="text-base font-semibold text-zinc-300 uppercase tracking-wider">
           Registered Commands
